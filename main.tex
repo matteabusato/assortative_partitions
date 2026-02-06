@@ -1,0 +1,364 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{multicol}
+\usepackage[percent]{overpic}
+\usepackage{geometry}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{anyfontsize}
+\usepackage{charter}
+\usepackage[charter]{mathdesign}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning}
+\usepackage{hyperref}
+\usepackage{mathtools}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\newcommand{\indep}{\perp \!\!\! \perp}
+
+\title{Assortative Partitions in Graphs}
+\author{Mattea Busato}
+\date{February 2026}
+
+\begin{document}
+
+\maketitle
+
+\newpage
+
+\tableofcontents
+
+\newpage
+\section{Previous work: $H$-assortative balanced $2$-bipartitions on random $d$-regular graphs}
+
+\href{https://arxiv.org/pdf/2202.10379}{(Dis)assortative Partitions on Random Regular Graphs}
+
+\textbf{Results:}
+\begin{itemize}
+    \item $0\leq H \leq \ceil{\frac{d}{2}}$ easy
+    \item $\ceil{\frac{d}{2}}+1 \leq H \leq \ceil{\frac{d}{2}}+0.175\sqrt{d}$ frozen-$1$RSB
+    \item $\ceil{\frac{d}{2}}+0.175\sqrt{d} \leq H \leq d-1$ no solution
+    \item $H = d$ easy
+\end{itemize}
+
+\newpage
+
+\section{$H$-assortative balanced $3$-bipartitions on random $d$-regular graphs}
+
+\textbf{Problem } Given a $d$-regular undirected graph $G(V, E)$ we want to study the existence of assortative partitions $\{V_1,V_2,V_3\}$ with magnetization $\boldsymbol{m}=(\frac{1}{3},\frac{1}{3},\frac{1}{3})$
+
+\subsection{Probabilistic Setting of the Problem}
+\subsubsection{Probability distribution} 
+Any partition $\{ V_1, V_2, V_3 \}$ on the graph can be encoded into a matrix $\boldsymbol{X} = (\boldsymbol{x}_1\cdots\boldsymbol{x}_n)\in \{0,1\}^{n \times3}$ where $ \boldsymbol{x}_i = \begin{pmatrix}
+           x_{i,1} \\
+           x_{i,2} \\
+           x_{i,3}
+         \end{pmatrix}
+  $ with $x_{i,a} \in \{0,1\}$ $\forall a=1, 2, 3$ signifying that node $i$ belongs to the group $a$ if $x_{i,a}=1$. 
+
+  For this case, the magnetization $\boldsymbol{m}$ is naturally a vector of group densities
+  \begin{equation}
+      m_a = \frac{1}{n} \sum_{i = 1}^n x_{i,a}
+  \end{equation}
+  with $\sum_a m_a = 1$.
+
+  The analogue of the "balanced bipartition $m=0$" is then $\boldsymbol{m}=(\frac{1}{3},\frac{1}{3},\frac{1}{3})$. 
+  
+  We can define a probability distribution on the space of possible valid partitions as follows 
+  \begin{align}
+    \label{eqn:prob_distr}
+      Prob(\boldsymbol{X}) &= \frac{1}{Z} e^{-\boldsymbol{\mu}^T\;N(\boldsymbol{X})} \; \prod_{i\in V}\mathcal C_H\bigg(\sum_{j \in \partial i}\boldsymbol{x}_{i} \cdot \boldsymbol{x}_{j}\bigg) \; \prod_{i \in V} \mathbb 1 \bigg( \sum_{a=1, 2, 3} x_{i,a} = 1\bigg) \\
+      &= \frac{1}{Z} e^{-\sum_{a=1,2,3}\mu_a\sum_{i\in V} x_{i,a}} \; \prod_{i\in V} \mathbb 1 \bigg(H \leq \sum_{j \in \partial i}\boldsymbol{x}_{i} \cdot \boldsymbol{x}_{j}\bigg) \; \prod_{i \in V} \mathbb 1 \bigg( \sum_{a=1, 2, 3} x_{i,a} = 1\bigg)
+  \end{align}
+  where
+  \begin{itemize}
+      \item $Z$ is the normalization constant
+      \item $N(\boldsymbol X)= \boldsymbol X^T \boldsymbol 1_n =
+    \begin{pmatrix}
+    \sum_{i\in V} x_{i,1}\\
+    \sum_{i\in V} x_{i,2}\\
+    \sum_{i\in V} x_{i,3}
+    \end{pmatrix}
+    \in \mathbb R^3$
+    \item $\mathcal C_H(z) := \mathbb 1(H \le z)$
+    \item $\boldsymbol\mu = \begin{pmatrix}
+    \mu_1 \\
+    \mu_2 \\
+    \mu_3
+    \end{pmatrix}\in \mathbb R^3$ is the chemical potential used to adjust the expectation of the magnetization $\boldsymbol{m}$ to a desired value
+  \end{itemize}
+  Notice that
+  \begin{itemize}
+      \item $e^{-\boldsymbol{\mu}^T\;N(\boldsymbol{X})}$ allows us to bias the measure toward partitions with prescribed group densities $\boldsymbol{m}$
+      \item $\prod_{i\in V} \mathbb 1 \bigg(H \leq \sum_{j \in \partial i}\boldsymbol{x}_{i} \cdot \boldsymbol{x}_{j}\bigg)$ enforces that for every node $i$ the number of neighbors in the same group is greater or equal to $H$, indeed $\forall j \in \partial i , \forall a=1, 2, 3$ we have that $x_{i,a}x_{j,a}=1$ if both nodes are in group $a$ and $x_{i,a}x_{j,a}=0$ otherwise.
+      \item $\prod_{i \in V} \mathbb 1 \bigg( \sum_{a=1, 2, 3} x_{i,a} = 1\bigg)$ enforces that each node $i$ belongs to exactly $1$ group $a$.
+  \end{itemize}
+
+\subsubsection{Obtaining the number of valid partitions} Given this definition of the probability distribution, we are able to compute the number of partitions that have a non-zero probability for a given group-density vector $\boldsymbol{m}$.  We define this number to be $\mathcal N (\boldsymbol{m})$ and its entropy $s(\boldsymbol{m})$
+\begin{equation}
+    \mathcal N (\boldsymbol{m}) = e ^{n\;s(\boldsymbol{m})}
+\end{equation}
+
+Defining the free entropy density to be $\Phi (\mu) = \frac{\log Z}{n}$, we can split the partition function $Z$ according to the group-density vector $\boldsymbol{m}$ as follows
+\begin{align}
+    e ^{n \;\Phi(\boldsymbol{\mu})} = Z &= \sum_{\{\boldsymbol{X} | \forall i \in V: \mathcal C_H\big(\sum_{j \in \partial i}\boldsymbol{x}_{i} \cdot \boldsymbol{x}_{j}\big)=1, \sum_{a=1, 2, 3} x_{i,a} = 1\}} e^{-\sum_{a=1,2,3}\mu_a\sum_{i\in V} x_{i,a}} \\
+    &= \int_{\boldsymbol m\in\Delta_2} d\boldsymbol m \; e^{ns(\boldsymbol{m})-n \; \boldsymbol{m}\cdot \boldsymbol{\mu}}
+\end{align}
+where $\Delta_2 := \{ \boldsymbol{m} \in \mathbb R ^3 : m_a \geq 0, \sum_a m_a = 1 \}$ is the $2$-simplex.
+
+For large graphs where the number of nodes goes to infinity we can apply saddle point method and see that
+\begin{align}
+    \Phi(\boldsymbol{\mu}) &= s(\boldsymbol{\hat{m}})-\boldsymbol{\mu}\cdot \boldsymbol{\hat{m}} \\
+    \frac{\partial s(\boldsymbol{m})}{\partial m_a} &= \mu_a  \qquad \forall a=1,2,3 \\
+\end{align}
+
+In order to obtain the function $s(\boldsymbol{m})$, we need to compute the magnetization $\boldsymbol{m}(\boldsymbol{\mu})$ and the free entropy density $\Phi(\boldsymbol{\mu})$ for different values of $\boldsymbol{\mu}$. Both of them can be computed from the partition function $Z$ as we have
+\begin{align}
+        \frac{\partial \Phi(\boldsymbol{\mu})}{\partial \mu_a} &= - \mathbb E_\mathbf X [m_a]\qquad \forall a=1,2,3 
+\end{align}
+
+\subsection{Belief Propagation}
+\subsubsection{Factor Graph } The most straightforward choice for the factor graph representation of the problem is: every node in the original graph becomes a variable node and each neighborhood of $i$ becomes a factor to ensure the constraint $\mathcal C_H$. We have priors on the variables to account for the potential $\mu$ as well as the constrain that each node belongs to exactly one group. This factor graph is not tree-like by default and has small loops that pose a problem for applying belief propagation.
+
+To eliminate this problem we formulate another factor graph representation with the use of auxiliary variables:
+\begin{itemize}
+    \item for each node $\boldsymbol{x}_i$ we create exactly $|\partial i|$ copies of it $\boldsymbol{x}_i^j$ where $j \in \partial i$ denotes the neighbor of $i$
+    \item the variable nodes in the new factor graph are going to be tuples of the form $( \boldsymbol{x}_i^j, \boldsymbol{x}_j^i), \;\forall ij\in E$ in the original graph
+    \item the prior enforcing the chemical potential can be expressed as factor nodes of the form
+        \begin{equation}
+            g_{ij}(\boldsymbol{x}_i^j, \boldsymbol{x}_j^i) = \exp \bigg\{ -\sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}^j}{|\partial i|} + \frac{x_{j,a}^i}{|\partial j|}\bigg) \bigg\}
+        \end{equation}
+    \item the factor nodes representing the neighborhood of node $i$ are 
+        \begin{align}
+            \label{eqn:fi_constraint}
+            f_i(\{\boldsymbol{x}_i^k\}_{k\in \partial i }, \{\boldsymbol{x}_k^i\}_{k\in \partial i }) &= \mathcal C_H\bigg(\sum_{j \in \partial i}\boldsymbol{x}_{i}^j \cdot \boldsymbol{x}_{j}^i \bigg) \prod_{k \in \partial i } \mathbb 1 \bigg( \sum_{a=1, 2, 3} x^k_{i,a} = 1\bigg) \prod_{a=1,2,3} \mathbb 1 \bigg( \sum_{k \in \partial i} x_{i,a}^k \in \{0, \;|\partial i|\}\bigg) \\
+            &= \mathbb 1\bigg( H \leq \sum_{j \in \partial i}\boldsymbol{x}_{i}^j \cdot \boldsymbol{x}_{j}^i\bigg) \prod_{k \in \partial i } \mathbb 1 \bigg( \sum_{a=1, 2, 3} x^k_{i,a} = 1\bigg) \prod_{a=1,2,3} \mathbb 1 \bigg( \sum_{k \in \partial i} x_{i,a}^k \in \{0,\; |\partial i|\}\bigg)
+        \end{align}
+        where
+        \begin{itemize}
+            \item $\mathbb 1\bigg( H \leq \sum_{j \in \partial i}\boldsymbol{x}_{i}^j \cdot \boldsymbol{x}_{j}^i \bigg)$ enforces the assortativity constraint
+            \item $\mathbb \prod_{k \in \partial i } \mathbb 1 \bigg( \sum_{a=1, 2, 3} x^k_{i,a} = 1\bigg)$ enforces that all nodes belong to exactly $1$ group
+            \item $\prod_{a=1,2,3} \mathbb 1 \bigg( \sum_{k \in \partial i} x_{i,a}^k \in \{0,\; |\partial i|\}\bigg) $ enforces that all replicas of one node are the same
+        \end{itemize}
+\end{itemize}
+
+Because the $f_i$ enforce replica equality, each satisfying assignment in the auxiliary factor graph corresponds to exactly one assignment $\boldsymbol{X}$ of the original variables, therefore the resulting distribution is the same as in \ref{eqn:prob_distr}.
+
+We consider the resulting factor graph to be locally tree-like in the large $n$ limit.
+
+\noindent \textbf{Notation:} \begin{itemize}
+    \item $i, ij$ denote nodes and edges in the original graph $G=(V, E)$
+    \item $(i), (ij)$ denote factor nodes and variable nodes in the factor graph $G^*=(V^*, E^*)$ with $V^*$ set of variable nodes and $E^*$ set of factor nodes
+\end{itemize}
+
+\subsubsection{Belief propagation} We can now apply the Belief Propagation equations that will provide an asymptotically exact solution under the assumption that the incoming messages are independent.
+
+We call the $\psi_{\boldsymbol{x}_i^j, \boldsymbol{x}_j^i}^{(i) \to (ij)} $ the messages sent by factor node $(i)$ to the variable node $(ij)$, and $\chi^{(ij) \to (i)}_{\boldsymbol{x}_i^j, \boldsymbol{x}_j^i}$ the messages sent by variable node $(ij)$ to factor node $(i)$.
+
+\noindent The Belief Propagation equations read
+\begin{align}
+    \psi_{\boldsymbol{x}_i^j, \boldsymbol{x}_j^i}^{(i) \to (ij)} &=  \frac{1}{Z^{(i) \to (ij)}} \sum_{\{(\boldsymbol{x}_i^k, \boldsymbol{x}_k^i)\}_{(ik) \in \partial (i) \setminus (ij)}} f_i(\{(\boldsymbol{x}_i^k, \boldsymbol{x}_k^i)\}_{(ik)\in \partial (i) }) \prod_{(ik)\in \partial (i) \setminus (ij)} \chi^{(ik)\to (i)}_{\boldsymbol{x}_i^k, \boldsymbol{x}_k^i} \\
+    &= \frac{1}{Z^{(i) \to (ij)}} \sum_{\{(\boldsymbol{x}_i^k, \boldsymbol{x}_k^i)\}_{(ik) \in \partial (i) \setminus (ij)}} \mathbb 1\bigg( H \leq \sum_{j \in \partial i}\boldsymbol{x}_{i}^j \cdot \boldsymbol{x}_{j}^i\bigg) \prod_{k \in \partial i } \mathbb 1 \bigg( \sum_{a=1, 2, 3} x^k_{i,a} = 1\bigg) \prod_{a=1,2,3} \mathbb 1 \bigg( \sum_{k \in \partial i} x_{i,a}^k \in \{0, |\partial i|\}\bigg)  \prod_{(ik)\in \partial (i) \setminus (ij)} \chi^{(ik) \to (i)}_{\boldsymbol{x}_i^k, \boldsymbol{x}_k^i}   \\
+    \chi^{(ij) \to (j)}_{\boldsymbol{x}_i^j, \boldsymbol{x}_j^i} &= \frac{1}{Z^{(ij) \to (j)}} g_{ij}(\boldsymbol{x}_i^j, \boldsymbol{x}_j^i) \psi^{(i) \to (ij)}_{\boldsymbol{x}_i^j, \boldsymbol{x}_j^i} \\
+    &= \frac{1}{Z^{(ij) \to (j)}} \exp \bigg\{ -\sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}^j}{|\partial i|} + \frac{x_{j,a}^i}{|\partial j|}\bigg)\bigg\} \psi^{(i) \to (ij)}_{\boldsymbol{x}_i^j, \boldsymbol{x}_j^i}
+\end{align}
+
+where $Z^{(i) \to (ij)}$, $Z^{(ij) \to (i)}$ are normalisation constants to ensure that $\psi^{(i) \to (ij)}$, $\chi^{(ij) \to (i)}$ are probability distributions.
+
+Notice that the indicator function $\mathbb 1 \bigg( \sum_{k \in \partial i} x_{i,a}^k \in \{0, |\partial i|\}\bigg)$ in the factor variable messages $\psi_{\boldsymbol{x}_i^j, \boldsymbol{x}_j^i}^{(i) \to (ij)}$ is zero when the replicas of $i$ are not all identical. From this we can safely assume that at the fixed point for all $i$ it holds that $\boldsymbol{x}_i = \boldsymbol{x}_i^j$ for $j \in \partial i$. This simplifies the messages and we obtain
+\begin{align}
+    \psi_{\boldsymbol{x}_i, \boldsymbol{x}_j}^{(i) \to (ij)} 
+    &= \frac{1}{Z^{(i) \to (ij)}} \sum_{\{ \boldsymbol{x}_k\}_{(ik) \in \partial (i) \setminus (ij)}} \mathbb 1\bigg( H \leq \sum_{j \in \partial i}\boldsymbol{x}_{i} \cdot \boldsymbol{x}_{j}\bigg) \mathbb 1 \bigg( \sum_{a=1, 2, 3} x_{i,a} = 1\bigg)\prod_{(ik)\in \partial (i) \setminus (ij)} \chi^{(ik) \to (i)}_{\boldsymbol{x}_i, \boldsymbol{x}_k} \label{eqn:psi}\\
+    \chi^{(ij) \to (j)}_{\boldsymbol{x}_i, \boldsymbol{x}_j}&= \frac{1}{Z^{(ij) \to (j)}} \exp \bigg\{ -\sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}}{|\partial i|} + \frac{x_{j,a}}{|\partial j|}\bigg)\bigg\} \psi^{(i) \to (ij)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} 
+\end{align}
+
+For a fixed point of these messages, the corresponding replica symmetric free entropy $\Phi_{RS}$ can be formulated as
+\begin{align}
+    n \Phi_{RS} &=  \sum_{(ij)\in V^*} \log Z^{(ij)} + \sum_{(i)\in E^*} \log Z^{(i)} - \sum_{((ij), (i)) \in G^*} \log Z^{(ij), (i)}\\
+    &= \sum_{ij \in E} \log Z^{ij} + \sum_{i\in V} \log Z^i - 2\sum_{ij \in E} \log Z^{ij, i}
+\end{align}
+where
+\begin{align}
+    Z^{ij} & = \sum_{\{\boldsymbol{x}_i, \boldsymbol{x}_j \}} g_{ij}(\boldsymbol{x}_i, \boldsymbol{x}_j) \;\; \psi^{(i) \to (ij)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \;\; \psi^{(j) \to (ij)}_{\boldsymbol{x}_j, \boldsymbol{x}_i} \\
+    &= \sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3} \exp \bigg\{ -\sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}}{|\partial i|} + \frac{x_{j,a}}{|\partial j|}\bigg)\bigg\}\;\; \psi^{(i) \to (ij)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \;\; \psi^{(j) \to (ij)}_{\boldsymbol{x}_j, \boldsymbol{x}_i}\\
+    Z^i &= \sum_{\{ \boldsymbol{x}_i, \boldsymbol{x}_k\}_{(ik) \in \partial (i)}} f_i(\{(\boldsymbol{x}_i, \boldsymbol{x}_k)\}_{(ik)\in \partial (i) }) \prod_{(ij) \in \partial (i)} \chi^{(ij)\to (i)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \\
+    &= \sum_{\boldsymbol{x}_i \in \{0,1\}^3,\{ \boldsymbol{x}_k\in \{0,1\}^3\}_{(ik) \in \partial (i)}} \mathbb 1\bigg( H \leq \sum_{j \in \partial i}\boldsymbol{x}_{i} \cdot \boldsymbol{x}_{j} \bigg) \mathbb 1 \bigg( \sum_{a=1, 2, 3} x_{i,a} = 1\bigg) \prod_{(ij) \in \partial (i)} \chi^{(ij)\to (i)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \\
+    Z^{ij, i} &= \sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3} \chi^{(ij)\to (i)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \psi^{(i) \to (ij)}_{\boldsymbol{x}_i, \boldsymbol{x}_j}
+\end{align}
+
+Now notice that:
+\begin{align}
+    Z^{ij} &= \sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3} \exp \bigg\{ -\sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}}{|\partial i|} + \frac{x_{j,a}}{|\partial j|}\bigg)\bigg\}\;\; \psi^{(i) \to (ij)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \;\; \psi^{(j) \to (ij)}_{\boldsymbol{x}_j, \boldsymbol{x}_i}\\
+    &= \sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3} \chi^{(ij)\to (i)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \psi^{(i) \to (ij)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \\
+    &= Z^{ij, i} 
+\end{align}
+
+Hence we can substitute it in and obtain (with the help of reversing the formula for the $\chi^{(ij) \to (j)}$ message):
+\begin{align}
+    \label{eqn:simplified_bethe}
+    n \Phi_{RS} &=  \sum_{i\in V} \log Z^i - \sum_{ij \in E} \log Z^{ij} \\
+    Z^i &= \sum_{\boldsymbol{x}_i \in \{0,1\}^3,\{ \boldsymbol{x}_k\in \{0,1\}^3\}_{(ik) \in \partial (i)}} \mathbb 1\bigg( H \leq \sum_{j \in \partial i}\boldsymbol{x}_{i} \cdot \boldsymbol{x}_{j} \bigg) \mathbb 1 \bigg( \sum_{a=1, 2, 3} x_{i,a} = 1\bigg) \prod_{(ij) \in \partial (i)} \chi^{(ij)\to (i)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \\
+    Z^{ij} &= \sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3} \chi^{(ij)\to (i)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \psi^{(i) \to (ij)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \\
+    &= \sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3}  \exp \bigg\{ \sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}}{|\partial i|} + \frac{x_{j,a}}{|\partial j|}\bigg)\bigg\}\chi^{(ij) \to (i)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \chi^{(ij) \to (j)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} Z^{(ij) \to (j)} \\
+    &= \sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3} \exp \bigg\{ \sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}}{|\partial i|} + \frac{x_{j,a}}{|\partial j|}\bigg)\bigg\} \;\; \chi^{(ij) \to (i)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \chi^{(ij) \to (j)}_{\boldsymbol{x}_i, \boldsymbol{x}_j}
+\end{align}
+
+We can therefore eliminate the messages $\psi_{\boldsymbol{x}_i, \boldsymbol{x}_j}^{(i) \to (ij)}$ in the update rule and we can combine the computation of two message types into only a single message
+\begin{align}
+    \chi^{i\to j}_{\boldsymbol{x}_i, \boldsymbol{x}_j} &= \chi^{(ij)\to (j)}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \\
+    &= \frac{1}{Z^{i \to j}} \exp \bigg\{ -\sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}}{|\partial i|} + \frac{x_{j,a}}{|\partial j|}\bigg)\bigg\} \sum_{\{ \boldsymbol{x}_k\}_{(ik) \in \partial (i) \setminus (ij)}} \mathbb 1\bigg( H \leq \sum_{j \in \partial i}\boldsymbol{x}_{i} \cdot \boldsymbol{x}_{j}\bigg) \mathbb 1 \bigg( \sum_{a=1, 2, 3} x_{i,a} = 1\bigg)\prod_{(ik)\in \partial (i) \setminus (ij)} \chi^{k \to i}_{\boldsymbol{x}_k, \boldsymbol{x}_i}     \label{eqn:chi}
+\end{align}
+
+where we redefine $Z^{i \to j} = Z^{(i) \to (ij)} Z^{(ij) \to (j)}$.
+
+We can then rewrite $\Phi_{RS}$ as
+\begin{align}
+    \Phi_{RS} &= \frac{1}{n} \Bigg( \sum_{i\in V} \log Z^i - \sum_{ij \in E} \log Z^{ij} \Bigg) \\
+    &= \frac{1}{n} \Bigg(  \sum_{i\in V} \log \bigg( \sum_{\boldsymbol{x}_i \in \{0,1\}^3,\{ \boldsymbol{x}_k\in \{0,1\}^3\}_{(ik) \in \partial (i)}} \mathbb 1\bigg( H \leq \sum_{j \in \partial i}\boldsymbol{x}_{i} \cdot \boldsymbol{x}_{j} \bigg) \mathbb 1 \bigg( \sum_{a=1, 2, 3} x_{i,a} = 1\bigg) \prod_{(ij) \in \partial (i)} \chi^{j\to i}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \bigg) \\
+    & \qquad - \sum_{ij \in E} \log \bigg(\sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3} \exp \bigg\{ \sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}}{|\partial i|} + \frac{x_{j,a}}{|\partial j|}\bigg)\bigg\} \;\; \chi^{j \to i}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \chi^{i \to j}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \bigg) \Bigg) \nonumber
+\end{align}
+
+From this we can compute the group density vector $\boldsymbol{m}$ as a function of $\boldsymbol{\mu}$ by:
+\begin{align}
+    m_1 &= \frac{\partial \Phi_{RS}(\boldsymbol
+    {\mu})}{\partial \mu_1} = - \frac{1}{n} \Bigg( \sum_{ij \in E} \frac{\sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3} \bigg(\frac{x_{i,1}}{|\partial i|} + \frac{x_{j,1}}{|\partial j|}\bigg) \exp \bigg\{ \sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}}{|\partial i|} + \frac{x_{j,a}}{|\partial j|}\bigg)\bigg\} \;\; \chi^{j \to i}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \chi^{i \to j}_{\boldsymbol{x}_i, \boldsymbol{x}_j}}{\sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3} \exp \bigg\{ \sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}}{|\partial i|} + \frac{x_{j,a}}{|\partial j|}\bigg)\bigg\} \;\; \chi^{j \to i}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \chi^{i \to j}_{\boldsymbol{x}_i, \boldsymbol{x}_j}}\Bigg)\\
+    m_2 &= \frac{\partial \Phi_{RS}(\boldsymbol
+    {\mu})}{\partial \mu_1} = - \frac{1}{n} \Bigg( \sum_{ij \in E} \frac{\sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3} \bigg(\frac{x_{i,2}}{|\partial i|} + \frac{x_{j,2}}{|\partial j|}\bigg) \exp \bigg\{ \sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}}{|\partial i|} + \frac{x_{j,a}}{|\partial j|}\bigg)\bigg\} \;\; \chi^{j \to i}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \chi^{i \to j}_{\boldsymbol{x}_i, \boldsymbol{x}_j}}{\sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3} \exp \bigg\{ \sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}}{|\partial i|} + \frac{x_{j,a}}{|\partial j|}\bigg)\bigg\} \;\; \chi^{j \to i}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \chi^{i \to j}_{\boldsymbol{x}_i, \boldsymbol{x}_j}}\Bigg)\\
+    m_3 &= \frac{\partial \Phi_{RS}(\boldsymbol
+    {\mu})}{\partial \mu_1} = - \frac{1}{n} \Bigg( \sum_{ij \in E} \frac{\sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3} \bigg(\frac{x_{i,3}}{|\partial i|} + \frac{x_{j,3}}{|\partial j|}\bigg) \exp \bigg\{ \sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}}{|\partial i|} + \frac{x_{j,a}}{|\partial j|}\bigg)\bigg\} \;\; \chi^{j \to i}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \chi^{i \to j}_{\boldsymbol{x}_i, \boldsymbol{x}_j}}{\sum_{\boldsymbol{x}_i \in \{0,1\}^3, \boldsymbol{x}_j \in \{0,1\}^3} \exp \bigg\{ \sum_{a=1,2,3}\mu_a\bigg(\frac{x_{i,a}}{|\partial i|} + \frac{x_{j,a}}{|\partial j|}\bigg)\bigg\} \;\; \chi^{j \to i}_{\boldsymbol{x}_i, \boldsymbol{x}_j} \chi^{i \to j}_{\boldsymbol{x}_i, \boldsymbol{x}_j}}\Bigg)
+\end{align}
+
+Now, we have everything to compute
+\begin{equation}
+    s(\boldsymbol{m}) = \Phi_{RS}(\boldsymbol{\mu}) + \boldsymbol{\mu} \cdot \boldsymbol{m} 
+\end{equation}
+
+We only need to find the fixed point $\chi$ for some given value of $\boldsymbol{m}$ and calculate $\Phi_{RS}$ at this fixed point. Then using the above formula will give us the entropy at the corresponding $\boldsymbol{\mu}$.
+
+\subsection{BP on $d$-reguar graphs}
+
+When we consider the problem only on $d$-regular graphs we have that $|\partial i| = |\partial j| = d$ for all $i,j$. Under the same assumptions under which BP is also asymptotically exact on tree-like graphs, at a fixed point on the belief propagation, all messages have to be equal locally and we set them to be
+\begin{equation}
+    \chi_{\boldsymbol{x},\boldsymbol{y}} = \chi_{\boldsymbol{x},\boldsymbol{y}}^{i\to j}, \qquad \forall i, j \in V
+\end{equation}
+
+Notice that for each $\boldsymbol{x}_i$ the "allowed" values are $\boldsymbol{x}_i \in \{    \begin{pmatrix}
+    1\\
+    0\\
+    0
+    \end{pmatrix}, \begin{pmatrix}
+    0\\
+    1\\
+    0
+    \end{pmatrix}, \begin{pmatrix}
+    0\\
+    0\\
+    1
+    \end{pmatrix}\}$ since each node must belong to exactly one of the $3$ groups.
+
+Let's denote these values as
+\begin{align}
+    \boldsymbol{e}_1 &= \begin{pmatrix}
+    1\\
+    0\\
+    0
+    \end{pmatrix}, \\
+    \boldsymbol{e}_2 &= \begin{pmatrix}
+    0\\
+    1\\
+    0
+    \end{pmatrix}, \\
+    \boldsymbol{e}_3 &= \begin{pmatrix}
+    0\\
+    0\\
+    1
+    \end{pmatrix}.
+\end{align}
+
+We can use these two facts to simplify the update rule from \ref{eqn:chi} considerably to get 
+\begin{align}
+     \chi_{\boldsymbol{x},\boldsymbol{y}}  &= \textcolor{red}{\underline{\textcolor{black}{\frac{1}{Z} \exp \bigg\{ -\frac{1}{d}\sum_{a=1,2,3}\mu_a\big(x_{a} + y_{a}\big)  \bigg\}}}} \;\;\;\textcolor{blue}{\underline{\textcolor{black}{\sum_{r = 0}^{d-1} \sum_{k = 0}^{d-1-r} \frac{(d-1)!}{r! \;k! \;(d-1-r-k)!}\mathbb 1\bigg( H \leq r + \boldsymbol{x} \cdot\boldsymbol{y}\bigg) (\chi_{\boldsymbol{f}_1,\boldsymbol{x}})^r \; (\chi_{\boldsymbol{f}_2,\boldsymbol{x}})^k \;(\chi_{\boldsymbol{f}_3,\boldsymbol{x}})^{d-1-r-k} }}}
+\end{align}
+where
+\begin{itemize}
+    \item In the first part (\textcolor{red}{*}), we have simply substituted in $|\partial i|=|\partial j|=d$
+    \item In the second part (\textcolor{blue}{*}), we are summing over all the possible combinations of the other $d-1$ nodes entering the factor node. To do this we assign
+    \begin{itemize}
+        \item $r$ nodes to value $\boldsymbol{f}_1 = \boldsymbol{x}$,
+        \item $k$ nodes to one of the other two possible values other than $\boldsymbol{x}$, which without loss of generality we can assign with the formula $\boldsymbol{f}_2 = \mathbb 1(\boldsymbol{x}=\boldsymbol{e}_1)\boldsymbol{e}_2 + \mathbb 1(\boldsymbol{x}= \boldsymbol{e}_2)\boldsymbol{e}_3 + \mathbb 1(\boldsymbol{x}= \boldsymbol{e}_3)\boldsymbol{e}_1$,
+        \item the remaining $(d-1-r-k)$ nodes to the second other possible value other than $\boldsymbol{x}$, which again wlog we can assign with the formula $\boldsymbol{f}_3 = \mathbb 1(\boldsymbol{x}=\boldsymbol{e}_1)\boldsymbol{e}_3 + \mathbb 1(\boldsymbol{x}= \boldsymbol{e}_2)\boldsymbol{e}_1 + \mathbb 1(\boldsymbol{x}= \boldsymbol{e}_3)\boldsymbol{e}_2$
+    \end{itemize} We multiply by all the possible combinations of this configuration (the factorial fraction), and then we multiply by the new assortative constraint and by the other $\chi$ messages entering that node. The constraint of course depends on the number $r$ of entering nodes out of the $d-1$ that have the same values as $\boldsymbol{x}$ (friends in the same group), and on $\mathbb 1 (\boldsymbol{x}=\boldsymbol{y})$ which can just be rewritten as $\boldsymbol{x}\cdot\boldsymbol{y}$. 
+\end{itemize}
+
+The replica symmetric free entropy on $d$-regular graphs reduces to 
+\begin{align}
+    \Phi_{RS} &= \log Z_{\text{node}} - \frac{d}{2}\log Z_{\text{edge}} \\
+    Z_{\text{node}} &= \sum_{\boldsymbol{x} \in \{\boldsymbol{e}_1, \boldsymbol{e}_2, \boldsymbol{e}_3 \}} 
+    \sum_{r = 0}^{d} \sum_{k = 0}^{d-r} \frac{d!}{r! \;k! \;(d-r-k)!}\mathbb 1\bigg( H \leq r \bigg) (\chi_{\boldsymbol{f}_1,\boldsymbol{x}})^r \; (\chi_{\boldsymbol{f}_2,\boldsymbol{x}})^k \;(\chi_{\boldsymbol{f}_3,\boldsymbol{x}})^{d-r-k} \\
+    Z_{\text{edge}} &= \sum_{(\boldsymbol{x}, \boldsymbol{y}) \in \{\boldsymbol{e}_1,\boldsymbol{e}_2, \boldsymbol{e}_3\}^2} \exp \bigg\{ \frac{1}{d}\sum_{a=1,2,3}\mu_a\big(x_{a} + y_{a}\big)  \bigg\} \; \chi_{\boldsymbol{x}, \boldsymbol{y}} \chi_{\boldsymbol{y}, \boldsymbol{x}}
+\end{align}
+since there are $\frac{nd}{2}$ edges in the original $d$-regular graph.
+
+The group-density vector $\boldsymbol{m}$ simplifies to
+\begin{align}
+    m_1 &= - \frac{1}{2} \Bigg(\frac{\sum_{(\boldsymbol{x}, \boldsymbol{y}) \in \{\boldsymbol{e}_1,\boldsymbol{e}_2, \boldsymbol{e}_3\}^2} \mu_1(x_1+y_1)\exp \bigg\{ \frac{1}{d}\sum_{a=1,2,3}\mu_a\big(x_{a} + y_{a}\big)  \bigg\} \; \chi_{\boldsymbol{x}, \boldsymbol{y}} \chi_{\boldsymbol{y}, \boldsymbol{x}}}{\sum_{(\boldsymbol{x}, \boldsymbol{y}) \in \{\boldsymbol{e}_1,\boldsymbol{e}_2, \boldsymbol{e}_3\}^2} \exp \bigg\{ \frac{1}{d}\sum_{a=1,2,3}\mu_a\big(x_{a} + y_{a}\big)  \bigg\} \; \chi_{\boldsymbol{x}, \boldsymbol{y}} \chi_{\boldsymbol{y}, \boldsymbol{x}}}\Bigg)\\
+    m_2 &= - \frac{1}{2} \Bigg(\frac{\sum_{(\boldsymbol{x}, \boldsymbol{y}) \in \{\boldsymbol{e}_1,\boldsymbol{e}_2, \boldsymbol{e}_3\}^2} \mu_2(x_2+y_2)\exp \bigg\{ \frac{1}{d}\sum_{a=1,2,3}\mu_a\big(x_{a} + y_{a}\big)  \bigg\} \; \chi_{\boldsymbol{x}, \boldsymbol{y}} \chi_{\boldsymbol{y}, \boldsymbol{x}}}{\sum_{(\boldsymbol{x}, \boldsymbol{y}) \in \{\boldsymbol{e}_1,\boldsymbol{e}_2, \boldsymbol{e}_3\}^2} \exp \bigg\{ \frac{1}{d}\sum_{a=1,2,3}\mu_a\big(x_{a} + y_{a}\big)  \bigg\} \; \chi_{\boldsymbol{x}, \boldsymbol{y}} \chi_{\boldsymbol{y}, \boldsymbol{x}}}\Bigg)\\
+    m_3 &= - \frac{1}{2} \Bigg(\frac{\sum_{(\boldsymbol{x}, \boldsymbol{y}) \in \{\boldsymbol{e}_1,\boldsymbol{e}_2, \boldsymbol{e}_3\}^2} \mu_3(x_3+y_3)\exp \bigg\{ \frac{1}{d}\sum_{a=1,2,3}\mu_a\big(x_{a} + y_{a}\big)  \bigg\} \; \chi_{\boldsymbol{x}, \boldsymbol{y}} \chi_{\boldsymbol{y}, \boldsymbol{x}}}{\sum_{(\boldsymbol{x}, \boldsymbol{y}) \in \{\boldsymbol{e}_1,\boldsymbol{e}_2, \boldsymbol{e}_3\}^2} \exp \bigg\{ \frac{1}{d}\sum_{a=1,2,3}\mu_a\big(x_{a} + y_{a}\big)  \bigg\} \; \chi_{\boldsymbol{x}, \boldsymbol{y}} \chi_{\boldsymbol{y}, \boldsymbol{x}}}\Bigg)\\
+\end{align}
+
+We can actually simplify the messages by bringing the indicator function into the summation as
+\begin{align}
+    \label{eqn:chi_final}
+     \chi_{\boldsymbol{x},\boldsymbol{y}}^{\text{ass}}  &= \frac{1}{Z} \exp \bigg\{ -\frac{1}{d}\sum_{a=1,2,3}\mu_a\big(x_{a} + y_{a}\big)  \bigg\}\;\sum_{r = H-\boldsymbol{x} \cdot \boldsymbol{y}}^{d-1} \sum_{k = 0}^{d-1-r} \frac{(d-1)!}{r! \;k! \;(d-1-r-k)!}(\chi_{\boldsymbol{f}_1,\boldsymbol{x}})^r \; (\chi_{\boldsymbol{f}_2,\boldsymbol{x}})^k \;(\chi_{\boldsymbol{f}_3,\boldsymbol{x}})^{d-1-r-k} \\
+     Z_{\text{node}}^{\text{ass}} &= \sum_{\boldsymbol{x} \in \{\boldsymbol{e}_1, \boldsymbol{e}_2, \boldsymbol{e}_3 \}} 
+    \sum_{r = H}^{d} \sum_{k = 0}^{d-r} \;\;\; \frac{d!}{r! \;k! \;(d-r-k)!}(\chi_{\boldsymbol{f}_1,\boldsymbol{x}})^r \; (\chi_{\boldsymbol{f}_2,\boldsymbol{x}})^k \;(\chi_{\boldsymbol{f}_3,\boldsymbol{x}})^{d-r-k} 
+\end{align}
+
+We can now apply a procedure to find the fixed point of the BP equations from which we will then retrieve $\Phi_{RS}$ and the entropy $s(\boldsymbol{m})$.
+
+\subsection{Analysis of BP results for $d$-regular random graphs}
+
+To obtain the replica symmetric entropy, the fixed point equation \ref{eqn:chi_final} is iterated until convergence, adapting $\boldsymbol{\mu}$ at every iteration in order to obtain the desired value of $\boldsymbol{m}$.
+
+\newpage
+
+\section{QUESTIONS \& TO DOs}
+\subsection{Open:}
+\begin{enumerate}
+    \item Be sure that the order of the subscripts in the notation of the messages is consistent 
+
+\end{enumerate}
+
+\subsection{Resolved:}
+\begin{enumerate}
+    \item How do I define the magnetization in the case of $k$ subset?
+    
+    I use a vector $\boldsymbol{g}_n=(0\dots1\dots0)$ for every node $n$ with a $1$ in position of the group it belongs to and then the magnetization / group density is defined as $\boldsymbol{m}=(\frac{1}{n}\sum_{i=1}^n g_{i,1}, \dots,\frac{1}{n}\sum_{i=1}^n g_{i,k})$
+    \item  Maybe find a better way to write down the constraints in formula \ref{eqn:fi_constraint}
+
+    But it does eliminate immediately so I think we can just keep it that way.
+    \item  Can we just simply assume that $x_i = x_i^j$ for $j \in \partial i$ ????
+
+    Yes, because the indicator function in the factor variable messages is $\psi$ is zero when the replicas of $i$ are not all identical.
+    \item  Is derivation \ref{eqn:simplified_bethe} correct?  
+    
+    YES, I wrote down the derivation in (27)-(29)
+    \item  Fix notation for nodes and edges in the original graph and in the factor graph
+    \item  REVISE ALL CALCULATIONS AND FIX NOTATION ASAP
+
+    \item From equation 33 to 34 we eliminate the normalisation constant $Z^{(ij) \to (j)}$, why?
+    \item In equation 22 of the paper a factor of $\frac{d}{2}$ appears in the formula for the magnetization, but it doesn't really make any sense, also because in that section we are not yet talking about $d$-regular graphs, i think the derivation with $\frac{1}{n}$ is more correct for now?   
+    
+    Correct, the factor $\frac{d}{2}$ should appear only later on when we talk about $d$-regular graphs
+    \item Fix the fact that $x \notin \{0,1\}^3$ but $x \in \{e_1, e_2, e_3\}$.
+
+    Done, we can keep $x \in \{0,1\}^3$ when there is the indicator function ensuring that each node belongs to exactly one group, then we can change it to $x \in \{e_1, e_2, e_3\}$.
+
+    \item To derive the magnetization from the derivative of $\Phi_{RS}$ do I have to consider the messages as fixed? ie, that I dont consider them as a function of $\mu$ which i would also have to derive
+
+    Yes
+\end{enumerate}
+\end{document}
