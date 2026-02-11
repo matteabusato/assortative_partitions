@@ -24,7 +24,7 @@ def normalize_chi(chi):
         chi = chi / chi_sum
     return chi
 
-def find_current_mu(D, M_star, chi):
+def find_current_mu(D, M_star, chi, mu0=np.zeros(3)):
     def m_values(mu):
         mu1, mu2, mu3 = mu
         return np.array([
@@ -38,13 +38,13 @@ def find_current_mu(D, M_star, chi):
     def residuals(mu):
         return m_values(mu) - M_star 
 
-    mu0 = np.zeros(3)
+    mu0 = mu0
     res = least_squares(residuals, mu0, method="trf")
 
     return res.x
 
-def update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping):
-    mu = find_current_mu(D, M, chi)
+def update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0):
+    mu = find_current_mu(D, M, chi, mu0)
 
     for i in range(3):
         for j in range(3):
@@ -109,7 +109,8 @@ def chi_metrics(chi_new, chi_old):
         "chi_entropy": float(-np.sum(np.where(chi_new > 0, chi_new * np.log(chi_new), 0.0))),
     }
 
-def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, log_every=1000, use_wandb=False):
+def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, log_every=1000, use_wandb=False):
+    mu = mu0.copy()
     iter = 0
     t0 = time.time()
 
@@ -117,7 +118,7 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, log_every=1000, use_wandb
 
     while iter < MAX_ITER:
         chi_old = chi.copy()
-        chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping)
+        chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu)
         
         metrics = chi_metrics(chi_new, chi_old)
         diff = metrics["chi_diff_max"]
@@ -176,11 +177,12 @@ if __name__ == "__main__":
     MAX_ITER = 1000000
     LOG_EVERY = 1000
     N_RUNS = 10
+    DAMPING = 0.01  
+    MU0 = np.zeros(3)
 
     for _ in range(N_RUNS):
         SEED = np.random.randint(0, 1000000)
         np.random.seed(SEED)
-        DAMPING = 0.01
 
         chi = np.ones((3,3), dtype=float) # dimension (K,K)
         chi /= chi.sum()
@@ -203,17 +205,18 @@ if __name__ == "__main__":
                     "THRESHOLD": THRESHOLD,
                     "MAX_ITER": MAX_ITER,
                     "damping": DAMPING,
+                    "mu0": MU0.tolist(),
                     "LOG_EVERY": LOG_EVERY,
-                    "chi_init": chi.tolist(),  # store full initial chi
+                    "chi_init": chi.tolist(),
                     "seed": SEED,
                 },
             )
-            # Optional: also store chi_init as a file artifact (handy if it gets big later)
+
             with open("chi_init.json", "w") as f:
                 json.dump({"chi_init": chi.tolist()}, f, indent=2)
             wandb.save("chi_init.json")
 
-        chi, mu, iters, total_time, converged = run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, DAMPING, log_every=LOG_EVERY,
+        chi, mu, iters, total_time, converged = run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, DAMPING, MU0, log_every=LOG_EVERY,
             use_wandb=USE_WANDB)
 
         Z_node, Z_edge, phi_RS, m_actual, s = compute_quantities(D, H, chi, mu)
@@ -236,7 +239,6 @@ if __name__ == "__main__":
             wandb.summary["m_err_l2_final"] = float(np.linalg.norm(m_actual - M))
             wandb.summary["m_err_maxabs_final"] = float(np.max(np.abs(m_actual - M)))
 
-            # log final matrices/vectors as artifacts for easy inspection
             with open("final_results.json", "w") as f:
                 json.dump({
                     "chi_final": chi.tolist(),
