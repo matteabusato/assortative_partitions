@@ -33,7 +33,6 @@ def generate_random_graph(N, D):
     print(f"Adjacency matrix:\n{graph.astype(int)}")
     return graph.astype(int)
 
-
 if __name__ == "__main__":
     N = 3  # Number of nodes
     D = 2   # Average degree
@@ -42,3 +41,4 @@ if __name__ == "__main__":
     H = 1
     M = np.array([1/3, 1/3, 1/3])
     n_solutions = find_solutions(N, D, H, M)
+    print(f"Number of valid partitions: {n_solutions}")
