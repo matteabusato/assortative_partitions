@@ -170,8 +170,12 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, log_every=1000, use_
 if __name__ == "__main__":
     # K = 3  ->  3 groups in the partition
     N = 15
-    D = 7
-    H = 3
+    D = 8
+    # check that N*D % 2 == 0 to ensure that the graph can be constructed without self-loops or multiple edges
+    if (N*D) % 2 != 0:
+        raise ValueError("N*D must be even to construct a valid graph without self-loops or multiple edges.")
+
+    H = 4
     M = np.array([1/3, 1/3, 1/3])
     THRESHOLD = 1e-10
     MAX_ITER = 1000000

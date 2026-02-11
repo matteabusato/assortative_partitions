@@ -1,0 +1,10 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/busato/.netrc.
+wandb: Currently logged in as: busatomattea (busatomattea-epfl) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run c6vlre9u
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260211_171840-c6vlre9u
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N15_D8_H4_damp0.01_seed612000
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/c6vlre9u
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.

@@ -50,3 +50,437 @@ wandb: Syncing run N15_D7_H3_damp0.01_seed70580
 wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
 wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/bpfdtzn9
 wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading history steps 330-357, summary, console lines 1-7
+wandb: 
+wandb: Run history:
+wandb:                Z_edge ▁▇██████████████████████████████████████
+wandb:                Z_node ▁▂▃▄▆▇▇█████████████████████████████████
+wandb:           chi_diff_l2 █▅▃▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:          chi_diff_max █▇▇▅▃▂▁▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     chi_diff_mean_abs █▃▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           chi_entropy █▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:               chi_max ▁▂▃▆████████████████████████████████████
+wandb:               chi_min █▅▂▁▃▃▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂
+wandb:           elapsed_sec ▁▁▂▂▂▂▂▂▂▃▃▃▃▃▄▄▄▄▄▅▅▅▅▅▅▆▆▆▆▇▇▇▇▇▇▇▇███
+wandb: estimated_n_solutions ▁████▇▇▇▇▇▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆
+wandb:                   +13 ...
+wandb: 
+wandb: Run summary:
+wandb:            Z_edge 0.0885
+wandb:            Z_node 0.0008
+wandb:       chi_diff_l2 0.0
+wandb:      chi_diff_max 0.0
+wandb: chi_diff_mean_abs 0.0
+wandb:       chi_entropy 2.16823
+wandb:           chi_max 0.15333
+wandb:           chi_min 0.08774
+wandb:         converged True
+wandb:       elapsed_sec 238.4026
+wandb:               +19 ...
+wandb: 
+wandb: 🚀 View run N15_D7_H3_damp0.01_seed70580 at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/bpfdtzn9
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260211_164209-bpfdtzn9/logs
+wandb: setting up run sadvq8ls
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260211_164611-sadvq8ls
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N15_D7_H3_damp0.01_seed411141
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/sadvq8ls
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading config.yaml; uploading final_results.json; uploading output.log; uploading wandb-summary.json
+wandb: 
+wandb: Run history:
+wandb:                Z_edge ▁▂▃▅▇███████████████████████████████████
+wandb:                Z_node ▁▆▇▇████████████████████████████████████
+wandb:           chi_diff_l2 █▅▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:          chi_diff_max █▇▇▄▃▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     chi_diff_mean_abs █▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           chi_entropy █▆▃▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:               chi_max ▁▇▇▇▇█▇▇▇███▇▇██████████████████████████
+wandb:               chi_min █▃▁▂▃▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂
+wandb:           elapsed_sec ▁▁▁▂▂▂▂▂▃▃▃▃▃▃▃▄▄▅▅▅▅▅▅▆▆▆▆▆▆▆▇▇▇▇▇▇▇███
+wandb: estimated_n_solutions ▁███████████████████████████████████████
+wandb:                   +13 ...
+wandb: 
+wandb: Run summary:
+wandb:            Z_edge 0.0885
+wandb:            Z_node 0.0008
+wandb:       chi_diff_l2 0.0
+wandb:      chi_diff_max 0.0
+wandb: chi_diff_mean_abs 0.0
+wandb:       chi_entropy 2.16823
+wandb:           chi_max 0.15333
+wandb:           chi_min 0.08774
+wandb:         converged True
+wandb:       elapsed_sec 237.75934
+wandb:               +19 ...
+wandb: 
+wandb: 🚀 View run N15_D7_H3_damp0.01_seed411141 at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/sadvq8ls
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260211_164611-sadvq8ls/logs
+wandb: setting up run fll31wrz
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260211_165011-fll31wrz
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N15_D7_H3_damp0.01_seed589375
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/fll31wrz
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading final_results.json; uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading history steps 332-357, summary, console lines 1-7
+wandb: 
+wandb: Run history:
+wandb:                Z_edge ▁▆▆▇████████████████████████████████████
+wandb:                Z_node ▁▂▆█████████████████████████████████████
+wandb:           chi_diff_l2 █▇▄▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:          chi_diff_max ██▇▅▄▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     chi_diff_mean_abs █▅▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           chi_entropy █▇▆▅▄▃▃▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:               chi_max ▁▂▇▇▇███████████████████████████████████
+wandb:               chi_min █▄▂▁▁▁▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           elapsed_sec ▁▁▁▁▂▂▂▂▂▂▃▃▃▄▄▄▄▄▅▅▅▅▅▅▆▆▆▆▆▆▇▇▇▇▇▇████
+wandb: estimated_n_solutions ▁▂▆███▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+wandb:                   +13 ...
+wandb: 
+wandb: Run summary:
+wandb:            Z_edge 0.0885
+wandb:            Z_node 0.0008
+wandb:       chi_diff_l2 0.0
+wandb:      chi_diff_max 0.0
+wandb: chi_diff_mean_abs 0.0
+wandb:       chi_entropy 2.16823
+wandb:           chi_max 0.15333
+wandb:           chi_min 0.08774
+wandb:         converged True
+wandb:       elapsed_sec 237.23429
+wandb:               +19 ...
+wandb: 
+wandb: 🚀 View run N15_D7_H3_damp0.01_seed589375 at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/fll31wrz
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260211_165011-fll31wrz/logs
+wandb: setting up run p41yiaqo
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260211_165412-p41yiaqo
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N15_D7_H3_damp0.01_seed730673
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/p41yiaqo
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading final_results.json; uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: 
+wandb: Run history:
+wandb:                Z_edge ▁▇▇▇████████████████████████████████████
+wandb:                Z_node ▁▅▇▇▇███████████████████████████████████
+wandb:           chi_diff_l2 █▄▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:          chi_diff_max █▃▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     chi_diff_mean_abs █▃▃▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           chi_entropy █▅▄▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:               chi_max ▁▂▃█████████████████████████████████████
+wandb:               chi_min █▅▄▄▁▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           elapsed_sec ▁▁▂▂▂▃▃▃▃▃▄▄▄▄▄▄▄▅▅▅▅▆▆▆▆▆▆▇▇▇▇▇▇▇▇▇▇███
+wandb: estimated_n_solutions ▁█▆▆▆▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅
+wandb:                   +13 ...
+wandb: 
+wandb: Run summary:
+wandb:            Z_edge 0.0885
+wandb:            Z_node 0.0008
+wandb:       chi_diff_l2 0.0
+wandb:      chi_diff_max 0.0
+wandb: chi_diff_mean_abs 0.0
+wandb:       chi_entropy 2.16823
+wandb:           chi_max 0.15333
+wandb:           chi_min 0.08774
+wandb:         converged True
+wandb:       elapsed_sec 236.65107
+wandb:               +19 ...
+wandb: 
+wandb: 🚀 View run N15_D7_H3_damp0.01_seed730673 at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/p41yiaqo
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260211_165412-p41yiaqo/logs
+wandb: setting up run alfndtb4
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260211_165811-alfndtb4
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N15_D7_H3_damp0.01_seed969169
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/alfndtb4
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading config.yaml; uploading final_results.json; uploading output.log; uploading wandb-summary.json
+wandb: uploading final_results.json; uploading output.log; uploading wandb-summary.json
+wandb: 
+wandb: Run history:
+wandb:                Z_edge ▁▂▂▃▄▇██████████████████████████████████
+wandb:                Z_node ▁███████████████████████████████████████
+wandb:           chi_diff_l2 █▄▃▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:          chi_diff_max █▅▅▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     chi_diff_mean_abs █▆▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           chi_entropy █▄▃▃▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:               chi_max ▁▇██████████████████████████████████████
+wandb:               chi_min █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           elapsed_sec ▁▁▂▂▂▂▂▂▂▃▃▃▃▃▃▃▄▄▄▄▅▅▅▅▆▆▆▆▆▆▆▆▇▇▇▇▇███
+wandb: estimated_n_solutions ▁▃██▆▆▆▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅▅
+wandb:                   +13 ...
+wandb: 
+wandb: Run summary:
+wandb:            Z_edge 0.0885
+wandb:            Z_node 0.0008
+wandb:       chi_diff_l2 0.0
+wandb:      chi_diff_max 0.0
+wandb: chi_diff_mean_abs 0.0
+wandb:       chi_entropy 2.16823
+wandb:           chi_max 0.15333
+wandb:           chi_min 0.08774
+wandb:         converged True
+wandb:       elapsed_sec 237.13807
+wandb:               +19 ...
+wandb: 
+wandb: 🚀 View run N15_D7_H3_damp0.01_seed969169 at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/alfndtb4
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260211_165811-alfndtb4/logs
+wandb: setting up run k3ue6gs3
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260211_170212-k3ue6gs3
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N15_D7_H3_damp0.01_seed386576
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/k3ue6gs3
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading final_results.json; uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: 
+wandb: Run history:
+wandb:                Z_edge ▁▄▅▆▆▇██████████████████████████████████
+wandb:                Z_node ▁▆▇█████████████████████████████████████
+wandb:           chi_diff_l2 ██▆▅▄▄▃▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:          chi_diff_max █▅▄▃▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     chi_diff_mean_abs █▇▆▅▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           chi_entropy █▇▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:               chi_max ▁▂▂▅▆███████████████████████████████████
+wandb:               chi_min █▇▃▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           elapsed_sec ▁▁▁▁▂▂▂▂▂▂▃▃▃▃▃▄▄▄▄▅▅▅▅▆▆▆▆▆▆▇▇▇▇▇▇█████
+wandb: estimated_n_solutions ▁▃██▇▇▇▇▇▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆
+wandb:                   +13 ...
+wandb: 
+wandb: Run summary:
+wandb:            Z_edge 0.0885
+wandb:            Z_node 0.0008
+wandb:       chi_diff_l2 0.0
+wandb:      chi_diff_max 0.0
+wandb: chi_diff_mean_abs 0.0
+wandb:       chi_entropy 2.16823
+wandb:           chi_max 0.15333
+wandb:           chi_min 0.08774
+wandb:         converged True
+wandb:       elapsed_sec 236.84799
+wandb:               +19 ...
+wandb: 
+wandb: 🚀 View run N15_D7_H3_damp0.01_seed386576 at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/k3ue6gs3
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260211_170212-k3ue6gs3/logs
+wandb: setting up run rjqhu1mq
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260211_170611-rjqhu1mq
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N15_D7_H3_damp0.01_seed563756
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/rjqhu1mq
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading history steps 331-357, summary, console lines 1-7
+wandb: 
+wandb: Run history:
+wandb:                Z_edge ▁▆██████████████████████████████████████
+wandb:                Z_node ▁▆▇█████████████████████████████████████
+wandb:           chi_diff_l2 █▇▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:          chi_diff_max █▃▄▃▃▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     chi_diff_mean_abs █▃▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           chi_entropy █▅▄▄▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:               chi_max ▁▄▄▇▇███████████████████████████████████
+wandb:               chi_min █▇▅▂▁▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           elapsed_sec ▁▁▁▂▂▂▂▂▃▃▄▄▅▅▅▆▆▆▆▆▆▇▇▇▇▇▇▇▇▇▇▇▇███████
+wandb: estimated_n_solutions ▁▄█▃▂▂▂▂▁▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                   +13 ...
+wandb: 
+wandb: Run summary:
+wandb:            Z_edge 0.0885
+wandb:            Z_node 0.0008
+wandb:       chi_diff_l2 0.0
+wandb:      chi_diff_max 0.0
+wandb: chi_diff_mean_abs 0.0
+wandb:       chi_entropy 2.16823
+wandb:           chi_max 0.15333
+wandb:           chi_min 0.08774
+wandb:         converged True
+wandb:       elapsed_sec 237.53341
+wandb:               +19 ...
+wandb: 
+wandb: 🚀 View run N15_D7_H3_damp0.01_seed563756 at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/rjqhu1mq
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260211_170611-rjqhu1mq/logs
+wandb: setting up run 6muiarkl
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260211_171011-6muiarkl
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N15_D7_H3_damp0.01_seed428877
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/6muiarkl
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading config.yaml; uploading final_results.json; uploading output.log; uploading wandb-summary.json; uploading history steps 329-357, summary, console lines 1-7
+wandb: uploading data
+wandb: 
+wandb: Run history:
+wandb:                Z_edge ▁▁▄▆▇███████████████████████████████████
+wandb:                Z_node ▁▇██████████████████████████████████████
+wandb:           chi_diff_l2 █▄▃▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:          chi_diff_max █▄▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     chi_diff_mean_abs █▅▂▂▂▁▁▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           chi_entropy █▃▃▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:               chi_max ▁▃▅▇▇▇▇█████████████████████████████████
+wandb:               chi_min █▇▆▃▁▁▁▁▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           elapsed_sec ▁▁▁▁▂▂▂▂▂▃▃▃▄▄▄▅▅▅▅▆▆▆▆▆▆▆▆▆▆▇▇▇▇▇▇█████
+wandb: estimated_n_solutions ▁▄██▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+wandb:                   +13 ...
+wandb: 
+wandb: Run summary:
+wandb:            Z_edge 0.0885
+wandb:            Z_node 0.0008
+wandb:       chi_diff_l2 0.0
+wandb:      chi_diff_max 0.0
+wandb: chi_diff_mean_abs 0.0
+wandb:       chi_entropy 2.16823
+wandb:           chi_max 0.15333
+wandb:           chi_min 0.08774
+wandb:         converged True
+wandb:       elapsed_sec 238.66886
+wandb:               +19 ...
+wandb: 
+wandb: 🚀 View run N15_D7_H3_damp0.01_seed428877 at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/6muiarkl
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260211_171011-6muiarkl/logs
+wandb: setting up run ta1o0jcd
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260211_171413-ta1o0jcd
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N15_D7_H3_damp0.01_seed183015
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/ta1o0jcd
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading wandb-summary.json; uploading config.yaml; uploading final_results.json; uploading output.log
+wandb: uploading history steps 349-357, summary, console lines 1-7
+wandb: 
+wandb: Run history:
+wandb:                Z_edge ▁▄▆█████████████████████████████████████
+wandb:                Z_node ▁▆▇█████████████████████████████████████
+wandb:           chi_diff_l2 █▄▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:          chi_diff_max █▇▇▅▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     chi_diff_mean_abs █▅▄▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           chi_entropy ██▇▅▄▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:               chi_max ▁▅▆▆▆█▇▇█▇▇████▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+wandb:               chi_min █▄▂▁▁▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂
+wandb:           elapsed_sec ▁▁▂▂▂▂▂▂▂▃▃▃▃▄▄▄▄▄▅▅▅▆▆▆▆▆▆▇▇▇▇▇▇▇▇█████
+wandb: estimated_n_solutions ▁▄▆██▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+wandb:                   +13 ...
+wandb: 
+wandb: Run summary:
+wandb:            Z_edge 0.0885
+wandb:            Z_node 0.0008
+wandb:       chi_diff_l2 0.0
+wandb:      chi_diff_max 0.0
+wandb: chi_diff_mean_abs 0.0
+wandb:       chi_entropy 2.16823
+wandb:           chi_max 0.15333
+wandb:           chi_min 0.08774
+wandb:         converged True
+wandb:       elapsed_sec 243.63075
+wandb:               +19 ...
+wandb: 
+wandb: 🚀 View run N15_D7_H3_damp0.01_seed183015 at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/ta1o0jcd
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260211_171413-ta1o0jcd/logs
+Found fixed point chi = 
+ [[0.15333463 0.09452574 0.09528621]
+ [0.09369965 0.14970622 0.0917824 ]
+ [0.08774395 0.0882575  0.14566369]]  after iters:  357660  time(s):  237.09897565841675
+Z_node =  0.0007996780636120288 , Z_edge =  0.08850363557911665 , phi_RS =  1.3551894356028162 , actual magnetization =  [0.33333333 0.33333333 0.33333333] , entropy =  0.3536229914688733
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  201.20914148973702
+Found fixed point chi = 
+ [[0.15333463 0.09452574 0.09528621]
+ [0.09369965 0.14970622 0.0917824 ]
+ [0.08774395 0.0882575  0.14566369]]  after iters:  357660  time(s):  238.73477602005005
+Z_node =  0.0007996780636120288 , Z_edge =  0.08850363557911665 , phi_RS =  1.3551894356028162 , actual magnetization =  [0.33333333 0.33333333 0.33333333] , entropy =  0.3536229914688733
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  201.20914148973702
+Found fixed point chi = 
+ [[0.15333463 0.09452574 0.09528621]
+ [0.09369965 0.14970622 0.0917824 ]
+ [0.08774395 0.0882575  0.14566369]]  after iters:  357660  time(s):  238.08959484100342
+Z_node =  0.0007996780636120288 , Z_edge =  0.08850363557911665 , phi_RS =  1.3551894356028162 , actual magnetization =  [0.33333333 0.33333333 0.33333333] , entropy =  0.3536229914688733
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  201.20914148973702
+Found fixed point chi = 
+ [[0.15333463 0.09452574 0.09528621]
+ [0.09369965 0.14970622 0.0917824 ]
+ [0.08774395 0.0882575  0.14566369]]  after iters:  357660  time(s):  237.56523823738098
+Z_node =  0.0007996780636120288 , Z_edge =  0.08850363557911665 , phi_RS =  1.3551894356028162 , actual magnetization =  [0.33333333 0.33333333 0.33333333] , entropy =  0.3536229914688733
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  201.20914148973702
+Found fixed point chi = 
+ [[0.15333463 0.09452574 0.09528621]
+ [0.09369965 0.14970622 0.0917824 ]
+ [0.08774395 0.0882575  0.14566369]]  after iters:  357660  time(s):  236.97942996025085
+Z_node =  0.0007996780636120288 , Z_edge =  0.08850363557911665 , phi_RS =  1.3551894356028162 , actual magnetization =  [0.33333333 0.33333333 0.33333333] , entropy =  0.3536229914688733
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  201.20914148973702
+Found fixed point chi = 
+ [[0.15333463 0.09452574 0.09528621]
+ [0.09369965 0.14970622 0.0917824 ]
+ [0.08774395 0.0882575  0.14566369]]  after iters:  357660  time(s):  237.4683220386505
+Z_node =  0.0007996780636120288 , Z_edge =  0.08850363557911665 , phi_RS =  1.3551894356028162 , actual magnetization =  [0.33333333 0.33333333 0.33333333] , entropy =  0.3536229914688733
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  201.20914148973702
+Found fixed point chi = 
+ [[0.15333463 0.09452574 0.09528621]
+ [0.09369965 0.14970622 0.0917824 ]
+ [0.08774395 0.0882575  0.14566369]]  after iters:  357660  time(s):  237.1772472858429
+Z_node =  0.0007996780636120288 , Z_edge =  0.08850363557911665 , phi_RS =  1.3551894356028162 , actual magnetization =  [0.33333333 0.33333333 0.33333333] , entropy =  0.3536229914688733
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  201.20914148973702
+Found fixed point chi = 
+ [[0.15333463 0.09452574 0.09528621]
+ [0.09369965 0.14970622 0.0917824 ]
+ [0.08774395 0.0882575  0.14566369]]  after iters:  357660  time(s):  237.8615107536316
+Z_node =  0.0007996780636120288 , Z_edge =  0.08850363557911665 , phi_RS =  1.3551894356028162 , actual magnetization =  [0.33333333 0.33333333 0.33333333] , entropy =  0.3536229914688733
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  201.20914148973702
+Found fixed point chi = 
+ [[0.15333463 0.09452574 0.09528621]
+ [0.09369965 0.14970622 0.0917824 ]
+ [0.08774395 0.0882575  0.14566369]]  after iters:  357660  time(s):  239.00102138519287
+Z_node =  0.0007996780636120288 , Z_edge =  0.08850363557911665 , phi_RS =  1.3551894356028162 , actual magnetization =  [0.33333333 0.33333333 0.33333333] , entropy =  0.3536229914688733
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  201.20914148973702
+Found fixed point chi = 
+ [[0.15333463 0.09452574 0.09528621]
+ [0.09369965 0.14970622 0.0917824 ]
+ [0.08774395 0.0882575  0.14566369]]  after iters:  357660  time(s):  243.97024822235107
+Z_node =  0.0007996780636120288 , Z_edge =  0.08850363557911665 , phi_RS =  1.3551894356028162 , actual magnetization =  [0.33333333 0.33333333 0.33333333] , entropy =  0.3536229914688733
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  201.20914148973702

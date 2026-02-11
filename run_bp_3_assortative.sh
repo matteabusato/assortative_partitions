@@ -19,3 +19,5 @@ module load python
 source /home/busato/venvs/assortative_partitions/bin/activate
 
 srun --cpu-bind=cores python /home/busato/assortative_partitions/bp_3_assortative.py
+
+echo "Job $SLURM_JOB_ID completed successfully!" | mail -s "Job finished" mattea.busato@epfl.ch
