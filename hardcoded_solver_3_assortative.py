@@ -1,7 +1,8 @@
 import itertools
 import numpy as np
 import networkx as nx
-import wandb
+import math
+# import wandb
 
 def compute_m_vector(partition, N):
     m = [0, 0, 0]
@@ -9,22 +10,30 @@ def compute_m_vector(partition, N):
         m[i] = np.sum(partition == i) / N
     return np.array(m)
 
-def is_valid_partition(partition, H):
-    group_counts = np.bincount(partition, minlength=3)
-    return np.sum(group_counts) >= H
+def is_valid_partition(partition, N, H, graph):
+    for i in range(N):
+        counter = 0
+        for j in range(N):
+            if graph[i, j] == 1 and partition[i] == partition[j]:
+                counter += 1
+        if counter < H :
+            return False
+    return True
 
-def find_solutions(N, D, H, M):
+def find_solutions(K, N, D, H, M, graph):
     counter = 0
     all_partitions = list(itertools.product(range(3), repeat=N))
-    total_partitions = len(all_partitions)
+    total_partitions = int(len(all_partitions) / math.factorial(K)) 
     for partition in all_partitions:
         partition = np.array(partition)
-        if np.allclose(compute_m_vector(partition, N), M) and is_valid_partition(partition, H):
+        if np.allclose(compute_m_vector(partition, N), M) and is_valid_partition(partition, N, H, graph):
+            print(f"Valid partition found: {partition}")
             counter += 1
 
-    return counter, total_partitions
+    counter /= math.factorial(K) # Normalize by the number of unique partitions
+    return int(counter), total_partitions
 
-def random_d_regular_adjacency(N: int, D: int):
+def random_d_regular_adjacency(N, D):
     if not (0 <= D < N):
         raise ValueError("Need 0 <= D < N.")
     if (N * D) % 2 != 0:
@@ -36,34 +45,37 @@ def random_d_regular_adjacency(N: int, D: int):
     return A
 
 if __name__ == "__main__":
-    N = 15  # Number of nodes
-    D = 8   # Average degreeH
+    K = 3  # Number of groups
+    N = 6  # Number of nodes
+    D = 3   # Average degreeH
     graph = random_d_regular_adjacency(N, D)
+    print(graph)
 
-    H = 3
+    H = 1   # Minimum number of same-group neighbors
     M = np.array([1/3, 1/3, 1/3])
 
-    wandb.init(
-        project="hardcoded_assortative",
-        name=f"N{N}_D{D}_H{H}_M{M.tolist()}",
-        group=f"N{N}_D{D}_H{H}_M{M.tolist()}", 
-        config={
-            "N": N,
-            "D": D,
-            "H": H,
-            "M": M.tolist(),
-        }
-    )
+    # wandb.init(
+    #     project="hardcoded_assortative",
+    #     name=f"N{N}_D{D}_H{H}_M{M.tolist()}",
+    #     group=f"N{N}_D{D}_H{H}_M{M.tolist()}", 
+    #     config={
+    #         "N": N,
+    #         "D": D,
+    #         "H": H,
+    #         "M": M.tolist(),
+    #     }
+    # )
 
-    n_solutions, total_partitions = find_solutions(N, D, H, M)
+    n_solutions, total_partitions = find_solutions(K, N, D, H, M, graph)
     print(f"Number of valid partitions: {n_solutions}")
+    print(f"Total number of partitions: {total_partitions}")
 
-    wandb.log({
-        "N": N,
-        "D": D,
-        "H": H,
-        "n_solutions": n_solutions,
-        "total_partitions": total_partitions,
-    })
+    # wandb.log({
+    #     "N": N,
+    #     "D": D,
+    #     "H": H,
+    #     "n_solutions": n_solutions,
+    #     "total_partitions": total_partitions,
+    # })
 
-    wandb.finish()
+    # wandb.finish()
