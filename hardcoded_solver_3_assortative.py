@@ -1,44 +1,81 @@
 import itertools
 import numpy as np
+import networkx as nx
+import math
+import wandb
 
 def compute_m_vector(partition, N):
-    m = []
+    m = [0, 0, 0]
     for i in range(3):
-        m_i = np.sum(partition == i) / N
-        m.append(m_i)
+        m[i] = np.sum(partition == i) / N
     return np.array(m)
 
-def is_valid_partition(partition, D, H):
-    # Check if the partition is valid based on the degree and number of friends
-    group_counts = np.bincount(partition, minlength=3)
-    return np.all(group_counts <= D) and np.sum(group_counts) == H
+def is_valid_partition(partition, N, H, graph):
+    for i in range(N):
+        counter = 0
+        for j in range(N):
+            if graph[i, j] == 1 and partition[i] == partition[j]:
+                counter += 1
+        if counter < H :
+            return False
+    return True
 
-def find_solutions(N, D, H, M):
+def find_solutions(K, N, D, H, M, graph):
     counter = 0
     all_partitions = list(itertools.product(range(3), repeat=N))
-    print(all_partitions)
+    total_partitions = int(len(all_partitions) / math.factorial(K)) 
     for partition in all_partitions:
-        if np.allclose(compute_m_vector(partition, N), M) and is_valid_partition(partition, D, H):
+        partition = np.array(partition)
+        if np.allclose(compute_m_vector(partition, N), M) and is_valid_partition(partition, N, H, graph):
             counter += 1
 
-    return counter
+    counter /= math.factorial(K) # Normalize by the number of unique partitions
+    return int(counter), total_partitions
 
-def generate_random_graph(N, D):
-    # Generate a random graph with N nodes and average degree D, return adjancency matrix
-    p = D / (N - 1)  # Probability of edge creation
-    graph = np.random.rand(N, N) < p  # Adjacency matrix
-    np.fill_diagonal(graph, 0)  # No self-loops
-    print(f"Generated random graph with {N} nodes and average degree {D}.")
-    print(f"Actual average degree: {graph.sum() / N:.2f}")
-    print(f"Adjacency matrix:\n{graph.astype(int)}")
-    return graph.astype(int)
+def random_d_regular_adjacency(N, D):
+    if not (0 <= D < N):
+        raise ValueError("Need 0 <= D < N.")
+    if (N * D) % 2 != 0:
+        raise ValueError("Need N*D even (handshaking lemma).")
 
+    G = nx.random_regular_graph(d=D, n=N)
+    A = nx.to_numpy_array(G, dtype=np.int8)
+    A = (A > 0).astype(np.int8)
+    return A
 
 if __name__ == "__main__":
-    N = 3  # Number of nodes
-    D = 2   # Average degree
-    graph = generate_random_graph(N, D)
+    K = 3  # Number of groups
+    N = 16  # Number of nodes
+    D = 9   # Average degreeH
+    graph = random_d_regular_adjacency(N, D)
 
-    H = 1
+    H = 2   # Minimum number of same-group neighbors. Less than D / K to ensure some valid partitions exist.
     M = np.array([1/3, 1/3, 1/3])
-    n_solutions = find_solutions(N, D, H, M)
+
+    SEED = np.random.randint(0, 1000000)
+    np.random.seed(SEED)
+
+    wandb.init(
+        project="hardcoded_assortative",
+        name=f"N{N}_D{D}_H{H}_M{M.tolist()}",
+        group=f"N{N}_D{D}_H{H}_M{M.tolist()}", 
+        config={
+            "N": N,
+            "D": D,
+            "H": H,
+            "M": M.tolist(),
+            "SEED": SEED
+        }
+    )
+
+    n_solutions, total_partitions = find_solutions(K, N, D, H, M, graph)
+
+    wandb.log({
+        "N": N,
+        "D": D,
+        "H": H,
+        "n_solutions": n_solutions,
+        "total_partitions": total_partitions,
+    })
+
+    wandb.finish()

@@ -1,0 +1,11 @@
+/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
+  backends.update(_get_backends("networkx.backends"))
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/busato/.netrc.
+wandb: Currently logged in as: busatomattea (busatomattea-epfl) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run 2fucjtd6
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260212_132328-2fucjtd6
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N16_D9_H2_M[0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/hardcoded_assortative
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/hardcoded_assortative/runs/2fucjtd6
