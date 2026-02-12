@@ -24,7 +24,7 @@ def normalize_chi(chi):
         chi = chi / chi_sum
     return chi
 
-def find_current_mu(D, M_star, chi, mu0=np.zeros(3)):
+def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear'):
     def m_values(mu):
         mu1, mu2, mu3 = mu
         return np.array([
@@ -39,12 +39,12 @@ def find_current_mu(D, M_star, chi, mu0=np.zeros(3)):
         return m_values(mu) - M_star 
 
     mu0 = mu0
-    res = least_squares(residuals, mu0, method="trf")
+    res = least_squares(residuals, mu0, method="trf", loss=loss)
 
     return res.x
 
-def update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0):
-    mu = find_current_mu(D, M, chi, mu0)
+def update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, loss):
+    mu = find_current_mu(D, M, chi, mu0, loss)
 
     for i in range(3):
         for j in range(3):
@@ -109,7 +109,7 @@ def chi_metrics(chi_new, chi_old):
         "chi_entropy": float(-np.sum(np.where(chi_new > 0, chi_new * np.log(chi_new), 0.0))),
     }
 
-def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, log_every=1000, use_wandb=False):
+def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, log_every=1000, use_wandb=False, loss='linear'):
     mu = mu0.copy()
     iter = 0
     t0 = time.time()
@@ -118,7 +118,7 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, log_every=1000, use_
 
     while iter < MAX_ITER:
         chi_old = chi.copy()
-        chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu)
+        chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu, loss)
         
         metrics = chi_metrics(chi_new, chi_old)
         diff = metrics["chi_diff_max"]
@@ -169,8 +169,8 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, log_every=1000, use_
 
 if __name__ == "__main__":
     # K = 3  ->  3 groups in the partition
-    N = 15
-    D = 8
+    N = 16
+    D = 9
     # check that N*D % 2 == 0 to ensure that the graph can be constructed without self-loops or multiple edges
     if (N*D) % 2 != 0:
         raise ValueError("N*D must be even to construct a valid graph without self-loops or multiple edges.")
@@ -178,11 +178,12 @@ if __name__ == "__main__":
     H = 3
     M = np.array([1/3, 1/3, 1/3])
     THRESHOLD = 1e-10
-    MAX_ITER = 1000000
+    MAX_ITER = 2000000
     LOG_EVERY = 1000
-    N_RUNS = 10
-    DAMPING = 0.01  
+    N_RUNS = 1
+    DAMPING = 0.005  
     MU0 = np.zeros(3)
+    loss_mu = "arctan"
 
     for _ in range(N_RUNS):
         SEED = np.random.randint(0, 1000000)
@@ -213,6 +214,7 @@ if __name__ == "__main__":
                     "LOG_EVERY": LOG_EVERY,
                     "chi_init": chi.tolist(),
                     "seed": SEED,
+                    "loss_mu": loss_mu,
                 },
             )
 
@@ -220,8 +222,8 @@ if __name__ == "__main__":
                 json.dump({"chi_init": chi.tolist()}, f, indent=2)
             wandb.save("chi_init.json")
 
-        chi, mu, iters, total_time, converged = run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, DAMPING, MU0, log_every=LOG_EVERY,
-            use_wandb=USE_WANDB)
+        chi, mu, iters, total_time, converged = run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, DAMPING, MU0, LOG_EVERY,
+            USE_WANDB, loss_mu)
 
         Z_node, Z_edge, phi_RS, m_actual, s = compute_quantities(D, H, chi, mu)
         n_solutions = float(np.exp(s * N))

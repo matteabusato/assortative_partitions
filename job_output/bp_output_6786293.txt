@@ -1,0 +1,7 @@
+  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 27
+    def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss):
+                                                             ^
+SyntaxError: non-default argument follows default argument
+srun: error: h122: task 0: Exited with exit code 1
+srun: Terminating StepId=6786293.0
+/var/spool/slurmd/job6786293/slurm_script: line 23: mail: command not found

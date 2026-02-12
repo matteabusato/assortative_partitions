@@ -2,7 +2,7 @@ import itertools
 import numpy as np
 import networkx as nx
 import math
-# import wandb
+import wandb
 
 def compute_m_vector(partition, N):
     m = [0, 0, 0]
@@ -27,7 +27,6 @@ def find_solutions(K, N, D, H, M, graph):
     for partition in all_partitions:
         partition = np.array(partition)
         if np.allclose(compute_m_vector(partition, N), M) and is_valid_partition(partition, N, H, graph):
-            print(f"Valid partition found: {partition}")
             counter += 1
 
     counter /= math.factorial(K) # Normalize by the number of unique partitions
@@ -46,36 +45,37 @@ def random_d_regular_adjacency(N, D):
 
 if __name__ == "__main__":
     K = 3  # Number of groups
-    N = 6  # Number of nodes
-    D = 3   # Average degreeH
+    N = 16  # Number of nodes
+    D = 9   # Average degreeH
     graph = random_d_regular_adjacency(N, D)
-    print(graph)
 
-    H = 1   # Minimum number of same-group neighbors
+    H = 2   # Minimum number of same-group neighbors. Less than D / K to ensure some valid partitions exist.
     M = np.array([1/3, 1/3, 1/3])
 
-    # wandb.init(
-    #     project="hardcoded_assortative",
-    #     name=f"N{N}_D{D}_H{H}_M{M.tolist()}",
-    #     group=f"N{N}_D{D}_H{H}_M{M.tolist()}", 
-    #     config={
-    #         "N": N,
-    #         "D": D,
-    #         "H": H,
-    #         "M": M.tolist(),
-    #     }
-    # )
+    SEED = np.random.randint(0, 1000000)
+    np.random.seed(SEED)
+
+    wandb.init(
+        project="hardcoded_assortative",
+        name=f"N{N}_D{D}_H{H}_M{M.tolist()}",
+        group=f"N{N}_D{D}_H{H}_M{M.tolist()}", 
+        config={
+            "N": N,
+            "D": D,
+            "H": H,
+            "M": M.tolist(),
+            "SEED": SEED
+        }
+    )
 
     n_solutions, total_partitions = find_solutions(K, N, D, H, M, graph)
-    print(f"Number of valid partitions: {n_solutions}")
-    print(f"Total number of partitions: {total_partitions}")
 
-    # wandb.log({
-    #     "N": N,
-    #     "D": D,
-    #     "H": H,
-    #     "n_solutions": n_solutions,
-    #     "total_partitions": total_partitions,
-    # })
+    wandb.log({
+        "N": N,
+        "D": D,
+        "H": H,
+        "n_solutions": n_solutions,
+        "total_partitions": total_partitions,
+    })
 
-    # wandb.finish()
+    wandb.finish()

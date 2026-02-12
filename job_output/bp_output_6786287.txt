@@ -1,0 +1,13 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/busato/.netrc.
+wandb: Currently logged in as: busatomattea (busatomattea-epfl) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run v58zhjmw
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260212_114233-v58zhjmw
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N16_D9_H3_damp0.01_seed117100
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/v58zhjmw
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+slurmstepd: error: *** JOB 6786287 ON h121 CANCELLED AT 2026-02-12T11:42:41 ***
+slurmstepd: error: *** STEP 6786287.0 ON h121 CANCELLED AT 2026-02-12T11:42:41 ***

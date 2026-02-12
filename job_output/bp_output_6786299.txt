@@ -1,0 +1,7 @@
+  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 226
+    use_wandb=USE_WANDB, loss_mu)
+                                ^
+SyntaxError: positional argument follows keyword argument
+srun: error: h121: task 0: Exited with exit code 1
+srun: Terminating StepId=6786299.0
+/var/spool/slurmd/job6786299/slurm_script: line 23: mail: command not found
