@@ -118,7 +118,7 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, log_every=1000, use_
 
     while iter < MAX_ITER:
         chi_old = chi.copy()
-        chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu)
+        chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0)
         
         metrics = chi_metrics(chi_new, chi_old)
         diff = metrics["chi_diff_max"]
@@ -206,6 +206,7 @@ if __name__ == "__main__":
                     "MAX_ITER": MAX_ITER,
                     "damping": DAMPING,
                     "mu0": MU0.tolist(),
+                    "settingmu0": "always_zero",
                     "LOG_EVERY": LOG_EVERY,
                     "chi_init": chi.tolist(),
                     "seed": SEED,
