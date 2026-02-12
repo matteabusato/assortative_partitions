@@ -45,11 +45,12 @@ def random_d_regular_adjacency(N, D):
 
 if __name__ == "__main__":
     K = 3  # Number of groups
-    N = 16  # Number of nodes
-    D = 9   # Average degreeH
+    alpha = 6
+    N = K * alpha  # Number of nodes  (multiple of K!!!!!!)
+    D = 15   # Average degreeH
     graph = random_d_regular_adjacency(N, D)
 
-    H = 2   # Minimum number of same-group neighbors. Less than D / K to ensure some valid partitions exist.
+    H = 5   # Minimum number of same-group neighbors. Less than D / K to ensure some valid partitions exist.
     M = np.array([1/3, 1/3, 1/3])
 
     SEED = np.random.randint(0, 1000000)

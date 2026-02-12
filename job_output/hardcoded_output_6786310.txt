@@ -1,0 +1,33 @@
+/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
+  backends.update(_get_backends("networkx.backends"))
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/busato/.netrc.
+wandb: Currently logged in as: busatomattea (busatomattea-epfl) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run 1drdch6e
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260212_133505-1drdch6e
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N16_D9_H2_M[0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/hardcoded_assortative
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/hardcoded_assortative/runs/1drdch6e
+wandb: updating run metadata
+wandb: uploading history steps 0-0, summary
+wandb: 
+wandb: Run history:
+wandb:                D ▁
+wandb:                H ▁
+wandb:                N ▁
+wandb:      n_solutions ▁
+wandb: total_partitions ▁
+wandb: 
+wandb: Run summary:
+wandb:                D 9
+wandb:                H 2
+wandb:                N 16
+wandb:      n_solutions 0
+wandb: total_partitions 7174453
+wandb: 
+wandb: 🚀 View run N16_D9_H2_M[0.3333333333333333, 0.3333333333333333, 0.3333333333333333] at: https://wandb.ai/busatomattea-epfl/hardcoded_assortative/runs/1drdch6e
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/hardcoded_assortative
+wandb: Synced 4 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20260212_133505-1drdch6e/logs
+/var/spool/slurmd/job6786310/slurm_script: line 23: mail: command not found

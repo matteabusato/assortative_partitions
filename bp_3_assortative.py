@@ -118,7 +118,7 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, log_every=1000, use_
 
     while iter < MAX_ITER:
         chi_old = chi.copy()
-        chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu, loss)
+        chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, loss)
         
         metrics = chi_metrics(chi_new, chi_old)
         diff = metrics["chi_diff_max"]
@@ -168,22 +168,23 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, log_every=1000, use_
     return chi, mu, iter, total_time, converged
 
 if __name__ == "__main__":
-    # K = 3  ->  3 groups in the partition
-    N = 16
-    D = 9
+    K = 3  # Number of groups
+    alpha = 6
+    N = K * alpha # Number of nodes  (multiple of K!!!!!!)
+    D = 15
     # check that N*D % 2 == 0 to ensure that the graph can be constructed without self-loops or multiple edges
-    if (N*D) % 2 != 0:
-        raise ValueError("N*D must be even to construct a valid graph without self-loops or multiple edges.")
+    if (N*D) % 2 != 0 or (N % K != 0):
+        raise ValueError("N*D must be even to construct a valid graph without self-loops or multiple edges and N must be a multiple of K.")
 
-    H = 3
+    H = 5
     M = np.array([1/3, 1/3, 1/3])
-    THRESHOLD = 1e-10
-    MAX_ITER = 2000000
+    THRESHOLD = 1e-11
+    MAX_ITER = 3000000
     LOG_EVERY = 1000
     N_RUNS = 1
-    DAMPING = 0.005  
+    DAMPING = 0.001  
     MU0 = np.zeros(3)
-    loss_mu = "arctan"
+    loss_mu = "arctan"  # can be "linear", "soft_l1", "huber", "cauchy", "arctan"
 
     for _ in range(N_RUNS):
         SEED = np.random.randint(0, 1000000)
@@ -211,6 +212,7 @@ if __name__ == "__main__":
                     "MAX_ITER": MAX_ITER,
                     "damping": DAMPING,
                     "mu0": MU0.tolist(),
+                    "settingmu": "always_zero",
                     "LOG_EVERY": LOG_EVERY,
                     "chi_init": chi.tolist(),
                     "seed": SEED,

@@ -1,1 +1,8 @@
 wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+Found fixed point chi =
+ [[0.13601484 0.1022377  0.10260328]
+ [0.10076071 0.13351648 0.09948865]
+ [0.097032   0.09733176 0.13101457]]  after iters:  1929096  time(s):  1419.4794402122498
+Z_node =  0.00011119943580017556 , Z_edge =  0.09078120077456484 , phi_RS =  1.692678496422321 , actual magnetization =  [0.33333336 0.33333332 0.33333331] , entropy =  0.6920830848620707
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  64429.65953090193
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.

@@ -1,0 +1,6 @@
+{"time":"2026-02-12T13:40:51.03823648+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-02-12T13:40:51.319962049+01:00","level":"INFO","msg":"stream: created new stream","id":"ltg16noy"}
+{"time":"2026-02-12T13:40:51.320067541+01:00","level":"INFO","msg":"handler: started","stream_id":"ltg16noy"}
+{"time":"2026-02-12T13:40:51.320524325+01:00","level":"INFO","msg":"stream: started","id":"ltg16noy"}
+{"time":"2026-02-12T13:40:51.320535252+01:00","level":"INFO","msg":"writer: started","stream_id":"ltg16noy"}
+{"time":"2026-02-12T13:40:51.320543679+01:00","level":"INFO","msg":"sender: started","stream_id":"ltg16noy"}
