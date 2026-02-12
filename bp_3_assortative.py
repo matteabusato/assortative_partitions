@@ -175,7 +175,7 @@ if __name__ == "__main__":
     if (N*D) % 2 != 0:
         raise ValueError("N*D must be even to construct a valid graph without self-loops or multiple edges.")
 
-    H = 4
+    H = 3
     M = np.array([1/3, 1/3, 1/3])
     THRESHOLD = 1e-10
     MAX_ITER = 1000000
