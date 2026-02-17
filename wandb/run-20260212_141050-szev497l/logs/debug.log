@@ -17,3 +17,8 @@ config: {'N': 18, 'D': 15, 'H': 5, 'M_target': [0.3333333333333333, 0.3333333333
 2026-02-12 14:10:50,924 INFO    MainThread:2410540 [wandb_run.py:_redirect():2446] Wrapping output streams.
 2026-02-12 14:10:50,924 INFO    MainThread:2410540 [wandb_run.py:_redirect():2469] Redirects installed.
 2026-02-12 14:10:50,928 INFO    MainThread:2410540 [wandb_init.py:init():1082] run started, returning control to user process
+2026-02-12 15:50:37,936 INFO    MainThread:2410540 [wandb_run.py:_finish():2295] finishing run busatomattea-epfl/bp_fixed_point/szev497l
+2026-02-12 15:50:37,937 INFO    MainThread:2410540 [wandb_run.py:_atexit_cleanup():2494] got exitcode: 0
+2026-02-12 15:50:37,937 INFO    MainThread:2410540 [wandb_run.py:_restore():2476] restore
+2026-02-12 15:50:37,937 INFO    MainThread:2410540 [wandb_run.py:_restore():2482] restore done
+2026-02-12 15:50:39,192 INFO    MainThread:2410540 [wandb_run.py:_footer_sync_info():3871] logging synced files

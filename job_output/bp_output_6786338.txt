@@ -1,0 +1,50 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/busato/.netrc.
+wandb: Currently logged in as: busatomattea (busatomattea-epfl) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run nxfp92ds
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260213_133023-nxfp92ds
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N18_D15_H5_damp0.9_seed956594
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/nxfp92ds
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: 
+wandb: Run history:
+wandb:                Z_edge ▁▁▁▁▁▁▁▁▁███████████████████████████████
+wandb:                Z_node ▁▁▁▁▁▁▁▁█▆▃▃▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           chi_diff_l2 ▁▁▁▁▁▁▂▂█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:          chi_diff_max ▂▂▂▂▂▃▆█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     chi_diff_mean_abs ▁▁▁▂▂▂▂▃▄█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           chi_entropy ███████████████▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:               chi_max ▁▁▁▁▁▁▁▁▁▂▂█████████████████████████████
+wandb:               chi_min █████▇▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           elapsed_sec ▁▁▁▁▂▂▂▃▃▃▃▃▃▃▃▄▄▄▄▄▄▄▅▅▅▅▅▅▅▆▇▇▇▇▇▇▇███
+wandb: estimated_n_solutions ▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                   +13 ...
+wandb: 
+wandb: Run summary:
+wandb:            Z_edge 0.95653
+wandb:            Z_node 0.0
+wandb:       chi_diff_l2 0.0
+wandb:      chi_diff_max 0.0
+wandb: chi_diff_mean_abs 0.0
+wandb:       chi_entropy 1e-05
+wandb:           chi_max 1.0
+wandb:           chi_min 0.0
+wandb:         converged True
+wandb:       elapsed_sec 118.17583
+wandb:               +19 ...
+wandb: 
+wandb: 🚀 View run N18_D15_H5_damp0.9_seed956594 at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/nxfp92ds
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260213_133023-nxfp92ds/logs
+Found fixed point chi = 
+ [[9.99999221e-01 9.74033089e-08 9.74033090e-08]
+ [9.74814459e-08 9.74917254e-08 9.74027051e-08]
+ [9.74027572e-08 9.74027578e-08 9.74027579e-08]]  after iters:  100527  time(s):  118.75287461280823
+Z_node =  1.4610284066701032e-06 , Z_edge =  0.9565272476387878 , phi_RS =  -13.103024954386306 , actual magnetization =  [3.33333337e-01 1.02187480e-13 1.02095998e-13] , entropy =  -13.214136067828258
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  5.024874359118654e-104

@@ -28,23 +28,26 @@ def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear'):
     def m_values(mu):
         mu1, mu2, mu3 = mu
         return np.array([
-            -mu1 * (np.exp((2/D)*mu1)*(chi[0, 0]**2)+ np.exp((1/D)*(mu1+mu2))*(chi[0, 1]*chi[1, 0]) + np.exp((1/D)*(mu1+mu3))*(chi[0, 2]*chi[2, 0])) 
+            -(np.exp((2/D)*mu1)*(chi[0, 0]**2)+ np.exp((1/D)*(mu1+mu2))*(chi[0, 1]*chi[1, 0]) + np.exp((1/D)*(mu1+mu3))*(chi[0, 2]*chi[2, 0])) 
             / (np.exp((2/D)*mu1)*(chi[0,0]**2) + np.exp((2/D)*mu2)*(chi[1,1]**2) + np.exp((2/D)*mu3)*(chi[2,2]**2) + 2*(np.exp((1/D)*(mu1+mu2))*chi[0,1]*chi[1,0]) + 2*(np.exp((1/D)*(mu2+mu3))*chi[1,2]*chi[2,1]) + 2*(np.exp((1/D)*(mu3+mu1)) *chi[2,0]*chi[0,2]) ),
-            -mu2 * (np.exp((2/D)*mu2)*(chi[1, 1]**2)+ np.exp((1/D)*(mu2+mu1))*(chi[1, 0]*chi[0, 1]) + np.exp((1/D)*(mu2+mu3))*(chi[1, 2]*chi[2, 1])) 
+            - (np.exp((2/D)*mu2)*(chi[1, 1]**2)+ np.exp((1/D)*(mu2+mu1))*(chi[1, 0]*chi[0, 1]) + np.exp((1/D)*(mu2+mu3))*(chi[1, 2]*chi[2, 1])) 
             / (np.exp((2/D)*mu1)*(chi[0,0]**2) + np.exp((2/D)*mu2)*(chi[1,1]**2) + np.exp((2/D)*mu3)*(chi[2,2]**2) + 2*(np.exp((1/D)*(mu1+mu2))*chi[0,1]*chi[1,0]) + 2*(np.exp((1/D)*(mu2+mu3))*chi[1,2]*chi[2,1]) + 2*(np.exp((1/D)*(mu3+mu1)) *chi[2,0]*chi[0,2]) ),
-            -mu3 * (np.exp((2/D)*mu3)*(chi[2, 2]**2)+ np.exp((1/D)*(mu3+mu1))*(chi[2, 0]*chi[0, 2]) + np.exp((1/D)*(mu3+mu2))*(chi[2, 1]*chi[1, 2])) 
+            - (np.exp((2/D)*mu3)*(chi[2, 2]**2)+ np.exp((1/D)*(mu3+mu1))*(chi[2, 0]*chi[0, 2]) + np.exp((1/D)*(mu3+mu2))*(chi[2, 1]*chi[1, 2])) 
             / (np.exp((2/D)*mu1)*(chi[0,0]**2) + np.exp((2/D)*mu2)*(chi[1,1]**2) + np.exp((2/D)*mu3)*(chi[2,2]**2) + 2*(np.exp((1/D)*(mu1+mu2))*chi[0,1]*chi[1,0]) + 2*(np.exp((1/D)*(mu2+mu3))*chi[1,2]*chi[2,1]) + 2*(np.exp((1/D)*(mu3+mu1)) *chi[2,0]*chi[0,2]) ),
         ], dtype=float)
     def residuals(mu):
         return m_values(mu) - M_star 
 
     mu0 = mu0
-    res = least_squares(residuals, mu0, method="trf", loss=loss)
+    res = least_squares(residuals, mu0, method="trf", loss=loss, xtol=1e-12, ftol=1e-12, gtol=1e-12)
 
     return res.x
 
-def update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, loss):
-    mu = find_current_mu(D, M, chi, mu0, loss)
+def update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss):
+    if settingmu != "always_zero":
+        mu = find_current_mu(D, M, chi, mu0, loss)
+    else:
+        mu = np.zeros(3)    
 
     for i in range(3):
         for j in range(3):
@@ -109,7 +112,7 @@ def chi_metrics(chi_new, chi_old):
         "chi_entropy": float(-np.sum(np.where(chi_new > 0, chi_new * np.log(chi_new), 0.0))),
     }
 
-def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, log_every=1000, use_wandb=False, loss='linear'):
+def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every=1000, use_wandb=False, loss='linear'):
     mu = mu0.copy()
     iter = 0
     t0 = time.time()
@@ -118,7 +121,7 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, log_every=1000, use_
 
     while iter < MAX_ITER:
         chi_old = chi.copy()
-        chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, loss)
+        chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss)
         
         metrics = chi_metrics(chi_new, chi_old)
         diff = metrics["chi_diff_max"]
@@ -153,9 +156,6 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, log_every=1000, use_
                 "estimated_n_solutions": float(np.exp(s_tmp * N))
             }
 
-            # print(f"Iteration {iter}, max diff in chi: {diff:.10e}")
-            # print(f"chi =\n{chi}\n")
-
             if use_wandb and WANDB_AVAILABLE:
                 wandb.log(log_payload, step=iter)
 
@@ -169,22 +169,24 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, log_every=1000, use_
 
 if __name__ == "__main__":
     K = 3  # Number of groups
-    alpha = 6
-    N = K * alpha # Number of nodes  (multiple of K!!!!!!)
-    D = 15
+    alpha = 34
+    # N = K * alpha # N = 102 ensures that N is a multiple of K
+    N = 1002
+    D = 200
     # check that N*D % 2 == 0 to ensure that the graph can be constructed without self-loops or multiple edges
     if (N*D) % 2 != 0 or (N % K != 0):
         raise ValueError("N*D must be even to construct a valid graph without self-loops or multiple edges and N must be a multiple of K.")
 
-    H = 5
+    H = 30
     M = np.array([1/3, 1/3, 1/3])
-    THRESHOLD = 1e-11
-    MAX_ITER = 3000000
+    THRESHOLD = 1e-12
+    MAX_ITER = 10000000
     LOG_EVERY = 1000
     N_RUNS = 1
-    DAMPING = 0.001  
+    DAMPING = 0.1
     MU0 = np.zeros(3)
-    loss_mu = "arctan"  # can be "linear", "soft_l1", "huber", "cauchy", "arctan"
+    settingmu = "always_zero"  # can be "always_zero", "", "previous",
+    loss_mu = "soft_l1"  # can be "linear", "soft_l1", "huber", "cauchy", "arctan"
 
     for _ in range(N_RUNS):
         SEED = np.random.randint(0, 1000000)
@@ -202,7 +204,7 @@ if __name__ == "__main__":
             wandb.init(
                 project="bp_fixed_point",
                 name=f"N{N}_D{D}_H{H}_damp{DAMPING}_seed{SEED}",
-                group=f"N{N}_D{D}_H{H}_M{M}", 
+                group=f"N{N}_D{D}", 
                 config={
                     "N": N,
                     "D": D,
@@ -212,7 +214,7 @@ if __name__ == "__main__":
                     "MAX_ITER": MAX_ITER,
                     "damping": DAMPING,
                     "mu0": MU0.tolist(),
-                    "settingmu": "always_zero",
+                    "settingmu": settingmu,
                     "LOG_EVERY": LOG_EVERY,
                     "chi_init": chi.tolist(),
                     "seed": SEED,
@@ -224,7 +226,7 @@ if __name__ == "__main__":
                 json.dump({"chi_init": chi.tolist()}, f, indent=2)
             wandb.save("chi_init.json")
 
-        chi, mu, iters, total_time, converged = run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, DAMPING, MU0, LOG_EVERY,
+        chi, mu, iters, total_time, converged = run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, DAMPING, MU0, settingmu, LOG_EVERY,
             USE_WANDB, loss_mu)
 
         Z_node, Z_edge, phi_RS, m_actual, s = compute_quantities(D, H, chi, mu)

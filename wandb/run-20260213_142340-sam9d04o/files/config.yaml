@@ -1,0 +1,134 @@
+_wandb:
+    value:
+        cli_version: 0.24.2
+        e:
+            qi1ib12ciner2rahny3rakt6laq4dfb4:
+                codePath: bp_3_assortative.py
+                codePathLocal: bp_3_assortative.py
+                cpu_count: 36
+                cpu_count_logical: 36
+                disk:
+                    /:
+                        total: "53660876800"
+                        used: "6832386048"
+                email: busatomattea@gmail.com
+                executable: /home/busato/venvs/assortative_partitions/bin/python
+                git:
+                    commit: 9e1cf2ee7751c27f55d3bbd2d2fdb47722e720a7
+                    remote: https://github.com/matteabusato/assortative_partitions.git
+                host: h122
+                memory:
+                    total: "201911078912"
+                os: Linux-5.14.0-70.30.1.el9_0.x86_64-x86_64-with-glibc2.34
+                program: /home/busato/assortative_partitions/bp_3_assortative.py
+                python: CPython 3.9.10
+                root: /home/busato/assortative_partitions
+                slurm:
+                    cluster_name: helvetios
+                    conf: /var/spool/slurmd/conf-cache/slurm.conf
+                    cpu_bind: quiet,mask_cpu:0x0FC030000
+                    cpu_bind_list: "0x0FC030000"
+                    cpu_bind_type: 'mask_cpu:'
+                    cpu_bind_verbose: quiet
+                    cpus_on_node: "8"
+                    cpus_per_task: "8"
+                    distribution: cyclic
+                    gtids: "0"
+                    job_account: master
+                    job_cpus_per_node: "8"
+                    job_end_time: "1771075418"
+                    job_gid: "30124"
+                    job_id: "6786344"
+                    job_name: bp_test_run
+                    job_nodelist: h122
+                    job_num_nodes: "1"
+                    job_partition: standard
+                    job_qos: serial
+                    job_start_time: "1770989018"
+                    job_uid: "309744"
+                    job_user: busato
+                    jobid: "6786344"
+                    launch_node_ipaddr: 10.91.19.122
+                    localid: "0"
+                    mem_per_node: "16384"
+                    nnodes: "1"
+                    nodeid: "0"
+                    nodelist: h122
+                    nprocs: "1"
+                    ntasks: "1"
+                    procid: "0"
+                    script_context: prolog_task
+                    srun_comm_host: 10.91.19.122
+                    srun_comm_port: "38839"
+                    step_id: "0"
+                    step_launcher_port: "38839"
+                    step_nodelist: h122
+                    step_num_nodes: "1"
+                    step_num_tasks: "1"
+                    step_tasks_per_node: "1"
+                    stepid: "0"
+                    submit_dir: /home/busato/assortative_partitions
+                    submit_host: helvetios2
+                    task_pid: "2992969"
+                    tasks_per_node: "1"
+                    topology_addr: t1.h6.h122
+                    topology_addr_pattern: switch.switch.node
+                    tres_per_task: cpu:8
+                    umask: "0022"
+                startedAt: "2026-02-13T13:23:40.920383Z"
+                writerId: qi1ib12ciner2rahny3rakt6laq4dfb4
+        m: []
+        python_version: 3.9.10
+        t:
+            "3":
+                - 2
+                - 3
+                - 13
+                - 16
+                - 61
+                - 62
+            "4": 3.9.10
+            "5": 0.24.2
+            "12": 0.24.2
+            "13": linux-x86_64
+D:
+    value: 15
+H:
+    value: 8
+LOG_EVERY:
+    value: 1000
+M_target:
+    value:
+        - 0.3333333333333333
+        - 0.3333333333333333
+        - 0.3333333333333333
+MAX_ITER:
+    value: 10000000
+"N":
+    value: 18
+THRESHOLD:
+    value: 1e-11
+chi_init:
+    value:
+        - - 0.1111111111111111
+          - 0.1111111111111111
+          - 0.1111111111111111
+        - - 0.1111111111111111
+          - 0.1111111111111111
+          - 0.1111111111111111
+        - - 0.1111111111111111
+          - 0.1111111111111111
+          - 0.1111111111111111
+damping:
+    value: 0.1
+loss_mu:
+    value: soft_l1
+mu0:
+    value:
+        - 0
+        - 0
+        - 0
+seed:
+    value: 59939
+settingmu:
+    value: always_zero

@@ -9,3 +9,25 @@ wandb: Run `wandb offline` to turn off syncing.
 wandb: Syncing run N16_D12_H3_M[0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
 wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/hardcoded_assortative
 wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/hardcoded_assortative/runs/b4xaxsry
+wandb: updating run metadata
+wandb: uploading history steps 0-0, summary
+wandb: 
+wandb: Run history:
+wandb:                D ▁
+wandb:                H ▁
+wandb:                N ▁
+wandb:      n_solutions ▁
+wandb: total_partitions ▁
+wandb: 
+wandb: Run summary:
+wandb:                D 12
+wandb:                H 3
+wandb:                N 16
+wandb:      n_solutions 0
+wandb: total_partitions 7174453
+wandb: 
+wandb: 🚀 View run N16_D12_H3_M[0.3333333333333333, 0.3333333333333333, 0.3333333333333333] at: https://wandb.ai/busatomattea-epfl/hardcoded_assortative/runs/b4xaxsry
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/hardcoded_assortative
+wandb: Synced 4 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20260212_135235-b4xaxsry/logs
+/var/spool/slurmd/job6786316/slurm_script: line 23: mail: command not found

@@ -8,3 +8,44 @@ wandb: Syncing run N16_D9_H3_damp0.005_seed432399
 wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
 wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/9qg3rfi4
 wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading final_results.json; uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: 
+wandb: Run history:
+wandb:                Z_edge ▁▁▃▃▄▅▆▆▆▇██████████████████████████████
+wandb:                Z_node ▁▄▅▅▅▇▇▇▇▇██████████████████████████████
+wandb:           chi_diff_l2 █▇▅▄▄▃▃▃▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:          chi_diff_max ██▅▅▄▄▄▄▃▃▂▂▂▂▁▁▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     chi_diff_mean_abs █▇▅▅▄▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           chi_entropy ██▇▇▄▄▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:               chi_max ▁▅▆▆▇▇▇█████████████████████████████████
+wandb:               chi_min ██▅▅▄▁▁▁▁▁▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           elapsed_sec ▁▁▁▁▁▁▁▁▂▂▂▂▃▃▃▃▃▄▄▄▅▅▅▅▅▅▆▆▆▆▆▇▇▇▇▇▇███
+wandb: estimated_n_solutions ▁▃▄▄▇███████████████████████████████████
+wandb:                   +13 ...
+wandb: 
+wandb: Run summary:
+wandb:            Z_edge 0.09078
+wandb:            Z_node 0.00011
+wandb:       chi_diff_l2 0.0
+wandb:      chi_diff_max 0.0
+wandb: chi_diff_mean_abs 0.0
+wandb:       chi_entropy 2.18716
+wandb:           chi_max 0.13601
+wandb:           chi_min 0.09703
+wandb:         converged True
+wandb:       elapsed_sec 4009.32211
+wandb:               +19 ...
+wandb: 
+wandb: 🚀 View run N16_D9_H3_damp0.005_seed432399 at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/9qg3rfi4
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260212_134120-9qg3rfi4/logs
+Found fixed point chi = 
+ [[0.13601483 0.10223769 0.10260327]
+ [0.10076072 0.13351648 0.09948866]
+ [0.097032   0.09733176 0.13101458]]  after iters:  1928994  time(s):  4011.398406982422
+Z_node =  0.00011119943566402442 , Z_edge =  0.09078120069144602 , phi_RS =  1.692678499318113 , actual magnetization =  [0.33333333 0.33333333 0.33333333] , entropy =  0.6920830841192236
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  64429.65876511975
+/var/spool/slurmd/job6786315/slurm_script: line 23: mail: command not found

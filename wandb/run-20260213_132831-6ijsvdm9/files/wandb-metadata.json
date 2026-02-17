@@ -1,0 +1,17 @@
+{
+  "os": "Linux-5.14.0-70.30.1.el9_0.x86_64-x86_64-with-glibc2.34",
+  "python": "CPython 3.9.10",
+  "startedAt": "2026-02-13T12:28:31.964954Z",
+  "program": "/home/busato/assortative_partitions/bp_3_assortative.py",
+  "codePath": "bp_3_assortative.py",
+  "codePathLocal": "bp_3_assortative.py",
+  "git": {
+    "remote": "https://github.com/matteabusato/assortative_partitions.git",
+    "commit": "9e1cf2ee7751c27f55d3bbd2d2fdb47722e720a7"
+  },
+  "email": "busatomattea@gmail.com",
+  "root": "/home/busato/assortative_partitions",
+  "host": "h121",
+  "executable": "/home/busato/venvs/assortative_partitions/bin/python",
+  "writerId": "3uqiyu1pzzop1skb4vc12no9a7hoc8lw"
+}
