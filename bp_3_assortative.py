@@ -28,18 +28,18 @@ def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear'):
     def m_values(mu):
         mu1, mu2, mu3 = mu
         return np.array([
-            -(np.exp((2/D)*mu1)*(chi[0, 0]**2)+ np.exp((1/D)*(mu1+mu2))*(chi[0, 1]*chi[1, 0]) + np.exp((1/D)*(mu1+mu3))*(chi[0, 2]*chi[2, 0])) 
+            (np.exp((2/D)*mu1)*(chi[0, 0]**2)+ np.exp((1/D)*(mu1+mu2))*(chi[0, 1]*chi[1, 0]) + np.exp((1/D)*(mu1+mu3))*(chi[0, 2]*chi[2, 0])) 
             / (np.exp((2/D)*mu1)*(chi[0,0]**2) + np.exp((2/D)*mu2)*(chi[1,1]**2) + np.exp((2/D)*mu3)*(chi[2,2]**2) + 2*(np.exp((1/D)*(mu1+mu2))*chi[0,1]*chi[1,0]) + 2*(np.exp((1/D)*(mu2+mu3))*chi[1,2]*chi[2,1]) + 2*(np.exp((1/D)*(mu3+mu1)) *chi[2,0]*chi[0,2]) ),
-            - (np.exp((2/D)*mu2)*(chi[1, 1]**2)+ np.exp((1/D)*(mu2+mu1))*(chi[1, 0]*chi[0, 1]) + np.exp((1/D)*(mu2+mu3))*(chi[1, 2]*chi[2, 1])) 
+            (np.exp((2/D)*mu2)*(chi[1, 1]**2)+ np.exp((1/D)*(mu2+mu1))*(chi[1, 0]*chi[0, 1]) + np.exp((1/D)*(mu2+mu3))*(chi[1, 2]*chi[2, 1])) 
             / (np.exp((2/D)*mu1)*(chi[0,0]**2) + np.exp((2/D)*mu2)*(chi[1,1]**2) + np.exp((2/D)*mu3)*(chi[2,2]**2) + 2*(np.exp((1/D)*(mu1+mu2))*chi[0,1]*chi[1,0]) + 2*(np.exp((1/D)*(mu2+mu3))*chi[1,2]*chi[2,1]) + 2*(np.exp((1/D)*(mu3+mu1)) *chi[2,0]*chi[0,2]) ),
-            - (np.exp((2/D)*mu3)*(chi[2, 2]**2)+ np.exp((1/D)*(mu3+mu1))*(chi[2, 0]*chi[0, 2]) + np.exp((1/D)*(mu3+mu2))*(chi[2, 1]*chi[1, 2])) 
+            (np.exp((2/D)*mu3)*(chi[2, 2]**2)+ np.exp((1/D)*(mu3+mu1))*(chi[2, 0]*chi[0, 2]) + np.exp((1/D)*(mu3+mu2))*(chi[2, 1]*chi[1, 2])) 
             / (np.exp((2/D)*mu1)*(chi[0,0]**2) + np.exp((2/D)*mu2)*(chi[1,1]**2) + np.exp((2/D)*mu3)*(chi[2,2]**2) + 2*(np.exp((1/D)*(mu1+mu2))*chi[0,1]*chi[1,0]) + 2*(np.exp((1/D)*(mu2+mu3))*chi[1,2]*chi[2,1]) + 2*(np.exp((1/D)*(mu3+mu1)) *chi[2,0]*chi[0,2]) ),
         ], dtype=float)
     def residuals(mu):
         return m_values(mu) - M_star 
 
-    mu0 = mu0
-    res = least_squares(residuals, mu0, method="trf", loss=loss, xtol=1e-12, ftol=1e-12, gtol=1e-12)
+    mu0 = mu0.copy()
+    res = least_squares(residuals, mu0, method="trf", loss=loss, xtol=1e-21, ftol=1e-21, gtol=1e-21)
 
     return res.x
 
@@ -85,9 +85,9 @@ def compute_phi_RS(D, Z_node, Z_edge):
 
 def compute_m_actual(D, mu, Z_edge, chi):
     m_actual = np.zeros(3)
-    m_actual[0] = - mu[0]* (1/Z_edge) * ( np.exp( (2/D) * mu[0]) * chi[0,0]**2 + np.exp( (1/D) * (mu[0]+mu[1]) ) * chi[0,1]*chi[1,0] + np.exp( (1/D) * (mu[0]+mu[2]) ) * chi[0,2]*chi[2,0] )
-    m_actual[1] = - mu[1]* (1/Z_edge) * ( np.exp( (2/D) * mu[1]) * chi[1,1]**2 + np.exp( (1/D) * (mu[1]+mu[0]) ) * chi[1,0]*chi[0,1] + np.exp( (1/D) * (mu[1]+mu[2]) ) * chi[1,2]*chi[2,1] )
-    m_actual[2] = - mu[2]* (1/Z_edge) * ( np.exp( (2/D) * mu[2]) * chi[2,2]**2 + np.exp( (1/D) * (mu[2]+mu[0]) ) * chi[2,0]*chi[0,2] + np.exp( (1/D) * (mu[2]+mu[1]) ) * chi[2,1]*chi[1,2] )
+    m_actual[0] = (np.exp((2/D) * mu[0]) * chi[0,0]**2 + np.exp((1/D) * (mu[0]+mu[1])) * chi[0,1]*chi[1,0] + np.exp((1/D) * (mu[0]+mu[2])) * chi[0,2]*chi[2,0]) / Z_edge
+    m_actual[1] = (np.exp((2/D) * mu[1]) * chi[1,1]**2 + np.exp((1/D) * (mu[1]+mu[0])) * chi[1,0]*chi[0,1] + np.exp((1/D) * (mu[1]+mu[2])) * chi[1,2]*chi[2,1]) / Z_edge
+    m_actual[2] = (np.exp((2/D) * mu[2]) * chi[2,2]**2 + np.exp((1/D) * (mu[2]+mu[0])) * chi[2,0]*chi[0,2] + np.exp((1/D) * (mu[2]+mu[1])) * chi[2,1]*chi[1,2]) / Z_edge
     return m_actual
 
 def compute_entropy(phi_RS, mu, m_actual):
@@ -152,6 +152,7 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every
                 "Z_node": float(Z_node_tmp),
                 "Z_edge": float(Z_edge_tmp),
                 "phi_RS": float(phi_RS_tmp),
+                "chi": [float(chi[i, j]) for i in range(3) for j in range(3)],
                 "s": float(s_tmp),
                 "estimated_n_solutions": float(np.exp(s_tmp * N))
             }
@@ -169,23 +170,21 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every
 
 if __name__ == "__main__":
     K = 3  # Number of groups
-    alpha = 34
-    # N = K * alpha # N = 102 ensures that N is a multiple of K
     N = 1002
-    D = 200
-    # check that N*D % 2 == 0 to ensure that the graph can be constructed without self-loops or multiple edges
+    D = 600
+
     if (N*D) % 2 != 0 or (N % K != 0):
         raise ValueError("N*D must be even to construct a valid graph without self-loops or multiple edges and N must be a multiple of K.")
 
-    H = 30
+    H = 200
     M = np.array([1/3, 1/3, 1/3])
-    THRESHOLD = 1e-12
-    MAX_ITER = 10000000
+    THRESHOLD = 1e-21
+    MAX_ITER = 1000000000
     LOG_EVERY = 1000
     N_RUNS = 1
-    DAMPING = 0.1
+    DAMPING = 0.01
     MU0 = np.zeros(3)
-    settingmu = "always_zero"  # can be "always_zero", "", "previous",
+    settingmu = "always_zero"  # can be "always_zero", "zero", "previous",
     loss_mu = "soft_l1"  # can be "linear", "soft_l1", "huber", "cauchy", "arctan"
 
     for _ in range(N_RUNS):
@@ -204,7 +203,7 @@ if __name__ == "__main__":
             wandb.init(
                 project="bp_fixed_point",
                 name=f"N{N}_D{D}_H{H}_damp{DAMPING}_seed{SEED}",
-                group=f"N{N}_D{D}", 
+                group=f"N{N}_D{D}_{settingmu}", 
                 config={
                     "N": N,
                     "D": D,
@@ -231,11 +230,6 @@ if __name__ == "__main__":
 
         Z_node, Z_edge, phi_RS, m_actual, s = compute_quantities(D, H, chi, mu)
         n_solutions = float(np.exp(s * N))
-
-        print("Found fixed point chi = \n", chi, " after iters: ", iters, " time(s): ", total_time)
-        print("Z_node = ", Z_node, ", Z_edge = ", Z_edge, ", phi_RS = ", phi_RS,
-            ", actual magnetization = ", m_actual, ", entropy = ", s)
-        print("The number of solution with magnetization close to target ", M, " is ", n_solutions)
 
         if USE_WANDB:
             wandb.summary["converged"] = bool(converged)

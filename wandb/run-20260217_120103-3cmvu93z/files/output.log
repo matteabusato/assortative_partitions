@@ -1,0 +1,12 @@
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+/home/busato/assortative_partitions/bp_3_assortative.py:156: RuntimeWarning: overflow encountered in exp
+  "estimated_n_solutions": float(np.exp(s_tmp * N))
+/home/busato/assortative_partitions/bp_3_assortative.py:233: RuntimeWarning: overflow encountered in exp
+  n_solutions = float(np.exp(s * N))
+Found fixed point chi =
+ [[0.11111111 0.11111111 0.11111111]
+ [0.11111111 0.11111111 0.11111111]
+ [0.11111111 0.11111111 0.11111111]]  after iters:  0  time(s):  96.98245549201965
+Z_node =  1.6009155496130212e-286 , Z_edge =  0.1111111111111111 , phi_RS =  1.0986122886680505 , actual magnetization =  [-0. -0. -0.] , entropy =  1.0986122886680505
+The number of solution with magnetization close to target  [0.33333333 0.33333333 0.33333333]  is  inf
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
