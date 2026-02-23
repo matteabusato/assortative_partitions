@@ -24,7 +24,7 @@ def normalize_chi(chi):
         chi = chi / chi_sum
     return chi
 
-def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear'):
+def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear', settingmu="previous"):
     def m_values(mu):
         mu1, mu2, mu3 = mu
         return np.array([
@@ -38,15 +38,20 @@ def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear'):
     def residuals(mu):
         return m_values(mu) - M_star 
 
-    mu0 = mu0.copy()
+    if settingmu=="zero":
+        mu0 = np.zeros(3)
+    elif settingmu=="previous":
+        mu0 = mu0
+
     res = least_squares(residuals, mu0, method="trf", loss=loss, xtol=1e-21, ftol=1e-21, gtol=1e-21)
 
     return res.x
 
 def update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss):
     chi_new = chi.copy()
+    mu = mu0.copy()
     if settingmu != "always_zero":
-        mu = find_current_mu(D, M, chi, mu0, loss)
+        mu = find_current_mu(D, M, chi, mu, loss, settingmu)
     else:
         mu = np.zeros(3)    
 
@@ -185,7 +190,7 @@ if __name__ == "__main__":
     N_RUNS = 1
     DAMPING = 0.01
     MU0 = np.zeros(3)
-    settingmu = "always_zero"  # can be "always_zero", "zero", "previous",
+    settingmu = "previous"  # can be "always_zero", "zero", "previous",
     loss_mu = "soft_l1"  # can be "linear", "soft_l1", "huber", "cauchy", "arctan"
 
     for _ in range(N_RUNS):
