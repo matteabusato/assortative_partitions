@@ -126,7 +126,7 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every
         
         metrics = chi_metrics(chi_new, chi_old)
         diff = metrics["chi_diff_max"]
-        chi = chi_new
+        chi = chi_new.copy()
 
         if iter%log_every == 0:
             elapsed = time.time() - t0
