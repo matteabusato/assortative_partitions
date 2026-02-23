@@ -44,6 +44,7 @@ def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear'):
     return res.x
 
 def update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss):
+    chi_new = chi.copy()
     if settingmu != "always_zero":
         mu = find_current_mu(D, M, chi, mu0, loss)
     else:
@@ -57,10 +58,10 @@ def update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss)
                 for k in range(D-1-r):
                     second_term += math.comb(D-1, r) * math.comb(D-1-r, k) * (chi[f1, i]**r) * (chi[f2,i]**k) * (chi[f3,i]**(D-1-r-k))
 
-            chi[i, j] = damping * np.exp(- (1/D)*(mu[i]+mu[j])) * second_term + (1-damping) * chi[i, j]
+            chi_new[i, j] = damping * np.exp(- (1/D)*(mu[i]+mu[j])) * second_term + (1-damping) * chi[i, j]
 
-    chi = normalize_chi(chi)
-    return chi, mu
+    chi_new = normalize_chi(chi_new)
+    return chi_new, mu
 
 def compute_Z_node(D, H, chi):
     Z_node = 0
