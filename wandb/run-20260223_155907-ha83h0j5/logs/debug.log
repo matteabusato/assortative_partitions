@@ -1,0 +1,24 @@
+2026-02-23 15:59:07,010 INFO    MainThread:908116 [wandb_setup.py:_flush():81] Current SDK version is 0.24.2
+2026-02-23 15:59:07,011 INFO    MainThread:908116 [wandb_setup.py:_flush():81] Configure stats pid to 908116
+2026-02-23 15:59:07,011 INFO    MainThread:908116 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-02-23 15:59:07,011 INFO    MainThread:908116 [wandb_init.py:setup_run_log_directory():717] Logging user logs to /home/busato/assortative_partitions/wandb/run-20260223_155907-ha83h0j5/logs/debug.log
+2026-02-23 15:59:07,011 INFO    MainThread:908116 [wandb_init.py:setup_run_log_directory():718] Logging internal logs to /home/busato/assortative_partitions/wandb/run-20260223_155907-ha83h0j5/logs/debug-internal.log
+2026-02-23 15:59:07,011 INFO    MainThread:908116 [wandb_init.py:init():844] calling init triggers
+2026-02-23 15:59:07,011 INFO    MainThread:908116 [wandb_init.py:init():849] wandb.init called with sweep_config: {}
+config: {'N': 1002, 'D': 600, 'H': 199, 'M_target': [0.3333333333333333, 0.3333333333333333, 0.3333333333333333], 'THRESHOLD': 1e-21, 'MAX_ITER': 1000000000, 'damping': 0.01, 'mu0': [0.0, 0.0, 0.0], 'settingmu': 'always_zero', 'LOG_EVERY': 1000, 'chi_init': [[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], 'initialization_chi': 'one_hot', 'seed': 133431, 'loss_mu': 'soft_l1', '_wandb': {}}
+2026-02-23 15:59:07,011 INFO    MainThread:908116 [wandb_init.py:init():892] starting backend
+2026-02-23 15:59:07,312 INFO    MainThread:908116 [wandb_init.py:init():895] sending inform_init request
+2026-02-23 15:59:07,333 INFO    MainThread:908116 [wandb_init.py:init():903] backend started and connected
+2026-02-23 15:59:07,378 INFO    MainThread:908116 [wandb_init.py:init():973] updated telemetry
+2026-02-23 15:59:07,406 INFO    MainThread:908116 [wandb_init.py:init():997] communicating run to backend with 90.0 second timeout
+2026-02-23 15:59:07,936 INFO    MainThread:908116 [wandb_init.py:init():1042] starting run threads in backend
+2026-02-23 15:59:08,015 INFO    MainThread:908116 [wandb_run.py:_console_start():2529] atexit reg
+2026-02-23 15:59:08,015 INFO    MainThread:908116 [wandb_run.py:_redirect():2377] redirect: wrap_raw
+2026-02-23 15:59:08,015 INFO    MainThread:908116 [wandb_run.py:_redirect():2446] Wrapping output streams.
+2026-02-23 15:59:08,015 INFO    MainThread:908116 [wandb_run.py:_redirect():2469] Redirects installed.
+2026-02-23 15:59:08,025 INFO    MainThread:908116 [wandb_init.py:init():1082] run started, returning control to user process
+2026-02-23 16:00:33,853 INFO    MainThread:908116 [wandb_run.py:_finish():2295] finishing run busatomattea-epfl/bp_fixed_point/ha83h0j5
+2026-02-23 16:00:33,854 INFO    MainThread:908116 [wandb_run.py:_atexit_cleanup():2494] got exitcode: 0
+2026-02-23 16:00:33,855 INFO    MainThread:908116 [wandb_run.py:_restore():2476] restore
+2026-02-23 16:00:33,856 INFO    MainThread:908116 [wandb_run.py:_restore():2482] restore done
+2026-02-23 16:00:35,439 INFO    MainThread:908116 [wandb_run.py:_footer_sync_info():3871] logging synced files

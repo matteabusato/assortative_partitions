@@ -43,7 +43,7 @@ def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear', settingmu="p
     elif settingmu=="previous":
         mu0 = mu0
 
-    res = least_squares(residuals, mu0, method="trf", loss=loss, xtol=1e-21, ftol=1e-21, gtol=1e-21)
+    res = least_squares(residuals, mu0, method="trf", loss=loss, xtol=2.23e-16, ftol=1e-21, gtol=1e-21)
 
     return res.x
 
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     if (N*D) % 2 != 0 or (N % K != 0):
         raise ValueError("N*D must be even to construct a valid graph without self-loops or multiple edges and N must be a multiple of K.")
 
-    H = 200
+    H = 199
     M = np.array([1/3, 1/3, 1/3])
     THRESHOLD = 1e-21
     MAX_ITER = 1000000000
@@ -190,14 +190,22 @@ if __name__ == "__main__":
     N_RUNS = 1
     DAMPING = 0.01
     MU0 = np.zeros(3)
-    settingmu = "previous"  # can be "always_zero", "zero", "previous",
+    settingmu = "always_zero"  # can be "always_zero", "zero", "previous",
     loss_mu = "soft_l1"  # can be "linear", "soft_l1", "huber", "cauchy", "arctan"
+    initialization_chi = "one_hot"  # can be "uniform", "one_hot", "gaussian"
+
 
     for _ in range(N_RUNS):
         SEED = np.random.randint(0, 1000000)
         np.random.seed(SEED)
 
-        chi = np.ones((3,3), dtype=float) # dimension (K,K)
+        if initialization_chi == "uniform":
+            chi = np.ones((3,3), dtype=float) # dimension (K,K)
+        elif initialization_chi == "one_hot":
+            chi = np.zeros((3,3), dtype=float)
+            chi[0,0] = 1.0
+        elif initialization_chi == "gaussian":
+            chi = np.random.rand(3, 3)
         chi /= chi.sum()
 
         USE_WANDB = True
@@ -208,7 +216,7 @@ if __name__ == "__main__":
         if USE_WANDB:
             wandb.init(
                 project="bp_fixed_point",
-                name=f"N{N}_D{D}_H{H}_damp{DAMPING}_seed{SEED}",
+                name=f"N{N}_D{D}_H{H}_seed{SEED}_{initialization_chi}_{settingmu}",
                 group=f"N{N}_D{D}_{settingmu}", 
                 config={
                     "N": N,
@@ -222,6 +230,7 @@ if __name__ == "__main__":
                     "settingmu": settingmu,
                     "LOG_EVERY": LOG_EVERY,
                     "chi_init": chi.tolist(),
+                    "initialization_chi": initialization_chi,
                     "seed": SEED,
                     "loss_mu": loss_mu,
                 },

@@ -1,0 +1,49 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/busato/.netrc.
+wandb: Currently logged in as: busatomattea (busatomattea-epfl) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run g7j6zuyg
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260223_155548-g7j6zuyg
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N1002_D600_H200_damp0.01_seed232738
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/g7j6zuyg
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+/home/busato/assortative_partitions/bp_3_assortative.py:163: RuntimeWarning: overflow encountered in exp
+  "estimated_n_solutions": float(np.exp(s_tmp * N))
+/home/busato/assortative_partitions/bp_3_assortative.py:247: RuntimeWarning: overflow encountered in exp
+  n_solutions = float(np.exp(s * N))
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading final_results.json; uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading data
+wandb: 
+wandb: Run history:
+wandb:            Z_edge ▁
+wandb:            Z_node ▁
+wandb:       chi_diff_l2 ▁
+wandb:      chi_diff_max ▁
+wandb: chi_diff_mean_abs ▁
+wandb:       chi_entropy ▁
+wandb:           chi_max ▁
+wandb:           chi_min ▁
+wandb:       elapsed_sec ▁
+wandb:              iter ▁
+wandb:               +13 ...
+wandb: 
+wandb: Run summary:
+wandb:            Z_edge 0.09611
+wandb:            Z_node 0.0
+wandb:       chi_diff_l2 0.0
+wandb:      chi_diff_max 0.0
+wandb: chi_diff_mean_abs 0.0
+wandb:       chi_entropy 1.99707
+wandb:           chi_max 0.19592
+wandb:           chi_min 0.00806
+wandb:         converged True
+wandb:       elapsed_sec 55.62876
+wandb:               +19 ...
+wandb: 
+wandb: 🚀 View run N1002_D600_H200_damp0.01_seed232738 at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/g7j6zuyg
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260223_155548-g7j6zuyg/logs

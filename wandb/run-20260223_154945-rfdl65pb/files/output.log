@@ -1,0 +1,21 @@
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py:824: UserWarning: Setting `ftol` below the machine epsilon (2.22e-16) effectively disables the corresponding termination condition.
+  ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
+/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py:824: UserWarning: Setting `xtol` below the machine epsilon (2.22e-16) effectively disables the corresponding termination condition.
+  ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
+/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py:824: UserWarning: Setting `gtol` below the machine epsilon (2.22e-16) effectively disables the corresponding termination condition.
+  ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
+Traceback (most recent call last):
+  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 243, in <module>
+    chi, mu, iters, total_time, converged = run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, DAMPING, MU0, settingmu, LOG_EVERY,
+  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 130, in run_bp
+    chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss)
+  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 54, in update_chi
+    mu = find_current_mu(D, M, chi, mu, loss, settingmu)
+  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 46, in find_current_mu
+    res = least_squares(residuals, mu0, method="trf", loss=loss, xtol=2.22e-16, ftol=1e-21, gtol=1e-21)
+  File "/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py", line 824, in least_squares
+    ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
+  File "/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py", line 124, in check_tolerance
+    raise ValueError("At least one of the tolerances must be higher than "
+ValueError: At least one of the tolerances must be higher than machine epsilon (2.22e-16).

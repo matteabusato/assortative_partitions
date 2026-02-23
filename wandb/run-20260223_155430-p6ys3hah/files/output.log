@@ -1,0 +1,10 @@
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py:824: UserWarning: Setting `ftol` below the machine epsilon (2.22e-16) effectively disables the corresponding termination condition.
+  ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
+/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py:824: UserWarning: Setting `gtol` below the machine epsilon (2.22e-16) effectively disables the corresponding termination condition.
+  ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
+/home/busato/assortative_partitions/bp_3_assortative.py:163: RuntimeWarning: overflow encountered in exp
+  "estimated_n_solutions": float(np.exp(s_tmp * N))
+/home/busato/assortative_partitions/bp_3_assortative.py:247: RuntimeWarning: overflow encountered in exp
+  n_solutions = float(np.exp(s * N))
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
