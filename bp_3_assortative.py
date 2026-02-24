@@ -27,13 +27,19 @@ def normalize_chi(chi):
 def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear', settingmu="previous"):
     def m_values(mu):
         mu1, mu2, mu3 = mu
+
+        den = (np.exp((2/D)*mu1)*(chi[0,0]**2)
+                + np.exp((2/D)*mu2)*(chi[1,1]**2)
+                + np.exp((2/D)*mu3)*(chi[2,2]**2)
+                + 2*(np.exp((1/D)*(mu1+mu2))*chi[0,1]*chi[1,0]
+                    + np.exp((1/D)*(mu2+mu3))*chi[1,2]*chi[2,1]
+                    + np.exp((1/D)*(mu3+mu1))*chi[2,0]*chi[0,2]
+                    )
+                )
         return np.array([
-            (np.exp((2/D)*mu1)*(chi[0, 0]**2)+ np.exp((1/D)*(mu1+mu2))*(chi[0, 1]*chi[1, 0]) + np.exp((1/D)*(mu1+mu3))*(chi[0, 2]*chi[2, 0])) 
-            / (np.exp((2/D)*mu1)*(chi[0,0]**2) + np.exp((2/D)*mu2)*(chi[1,1]**2) + np.exp((2/D)*mu3)*(chi[2,2]**2) + 2*(np.exp((1/D)*(mu1+mu2))*chi[0,1]*chi[1,0]) + 2*(np.exp((1/D)*(mu2+mu3))*chi[1,2]*chi[2,1]) + 2*(np.exp((1/D)*(mu3+mu1)) *chi[2,0]*chi[0,2]) ),
-            (np.exp((2/D)*mu2)*(chi[1, 1]**2)+ np.exp((1/D)*(mu2+mu1))*(chi[1, 0]*chi[0, 1]) + np.exp((1/D)*(mu2+mu3))*(chi[1, 2]*chi[2, 1])) 
-            / (np.exp((2/D)*mu1)*(chi[0,0]**2) + np.exp((2/D)*mu2)*(chi[1,1]**2) + np.exp((2/D)*mu3)*(chi[2,2]**2) + 2*(np.exp((1/D)*(mu1+mu2))*chi[0,1]*chi[1,0]) + 2*(np.exp((1/D)*(mu2+mu3))*chi[1,2]*chi[2,1]) + 2*(np.exp((1/D)*(mu3+mu1)) *chi[2,0]*chi[0,2]) ),
-            (np.exp((2/D)*mu3)*(chi[2, 2]**2)+ np.exp((1/D)*(mu3+mu1))*(chi[2, 0]*chi[0, 2]) + np.exp((1/D)*(mu3+mu2))*(chi[2, 1]*chi[1, 2])) 
-            / (np.exp((2/D)*mu1)*(chi[0,0]**2) + np.exp((2/D)*mu2)*(chi[1,1]**2) + np.exp((2/D)*mu3)*(chi[2,2]**2) + 2*(np.exp((1/D)*(mu1+mu2))*chi[0,1]*chi[1,0]) + 2*(np.exp((1/D)*(mu2+mu3))*chi[1,2]*chi[2,1]) + 2*(np.exp((1/D)*(mu3+mu1)) *chi[2,0]*chi[0,2]) ),
+            (np.exp((2/D)*mu1)*(chi[0, 0]**2)+ np.exp((1/D)*(mu1+mu2))*(chi[0, 1]*chi[1, 0]) + np.exp((1/D)*(mu1+mu3))*(chi[0, 2]*chi[2, 0])) / den,
+            (np.exp((2/D)*mu2)*(chi[1, 1]**2)+ np.exp((1/D)*(mu2+mu1))*(chi[1, 0]*chi[0, 1]) + np.exp((1/D)*(mu2+mu3))*(chi[1, 2]*chi[2, 1])) / den,
+            (np.exp((2/D)*mu3)*(chi[2, 2]**2)+ np.exp((1/D)*(mu3+mu1))*(chi[2, 0]*chi[0, 2]) + np.exp((1/D)*(mu3+mu2))*(chi[2, 1]*chi[1, 2])) / den,
         ], dtype=float)
     def residuals(mu):
         return m_values(mu) - M_star 
@@ -45,7 +51,7 @@ def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear', settingmu="p
 
     res = least_squares(residuals, mu0, method="trf", loss=loss, xtol=2.23e-16, ftol=1e-21, gtol=1e-21)
 
-    return res.x
+    return -res.x  # minus sign super important !
 
 def update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss):
     chi_new = chi.copy()
@@ -59,8 +65,8 @@ def update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss)
         for j in range(3):
             second_term = 0
             f1, f2, f3 = assign_f(i)
-            for r in range(H-(i==j), D-1):
-                for k in range(D-1-r):
+            for r in range(H-(i==j), D):
+                for k in range(D-r):
                     second_term += math.comb(D-1, r) * math.comb(D-1-r, k) * (chi[f1, i]**r) * (chi[f2,i]**k) * (chi[f3,i]**(D-1-r-k))
 
             chi_new[i, j] = damping * np.exp(- (1/D)*(mu[i]+mu[j])) * second_term + (1-damping) * chi[i, j]
@@ -72,8 +78,8 @@ def compute_Z_node(D, H, chi):
     Z_node = 0
     for i in range(3):
         f1, f2, f3 = assign_f(i)
-        for r in range(H, D):
-            for k in range(D-r):
+        for r in range(H, D+1):
+            for k in range(D-r+1):
                 Z_node += math.comb(D, r) * math.comb(D-r, k) * (chi[f1, i]**r) * (chi[f2,i]**k) * (chi[f3,i]**(D-r-k))
     return Z_node
 
@@ -177,23 +183,22 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every
 if __name__ == "__main__":
     K = 3  # Number of groups
     N = 1002
-    D = 600
+    D = 9
 
     if (N*D) % 2 != 0 or (N % K != 0):
         raise ValueError("N*D must be even to construct a valid graph without self-loops or multiple edges and N must be a multiple of K.")
 
-    H = 199
+    H = 3
     M = np.array([1/3, 1/3, 1/3])
     THRESHOLD = 1e-21
-    MAX_ITER = 1000000000
+    MAX_ITER = 10000000
     LOG_EVERY = 1000
     N_RUNS = 1
     DAMPING = 0.01
     MU0 = np.zeros(3)
-    settingmu = "always_zero"  # can be "always_zero", "zero", "previous",
+    settingmu = "previous"  # can be "always_zero", "zero", "previous",
     loss_mu = "soft_l1"  # can be "linear", "soft_l1", "huber", "cauchy", "arctan"
-    initialization_chi = "one_hot"  # can be "uniform", "one_hot", "gaussian"
-
+    initialization_chi = "uniform"  # can be "uniform", "unif_diag", "one_hot", "gaussian", "one_hot_softmax"
 
     for _ in range(N_RUNS):
         SEED = np.random.randint(0, 1000000)
@@ -201,11 +206,21 @@ if __name__ == "__main__":
 
         if initialization_chi == "uniform":
             chi = np.ones((3,3), dtype=float) # dimension (K,K)
+        elif initialization_chi == "unif_diag":
+            chi = np.zeros((3,3), dtype=float)
+            chi[0,0] = 1/3
+            chi[1,1] = 1/3
+            chi[2,2] = 1/3
         elif initialization_chi == "one_hot":
             chi = np.zeros((3,3), dtype=float)
             chi[0,0] = 1.0
-        elif initialization_chi == "gaussian":
+        elif initialization_chi == "one_hot_softmax":
+            chi = np.zeros((3,3), dtype=float)
+            chi[0,0] = 1.0
+            chi = np.exp(chi) / np.sum(np.exp(chi))
+        else:  # "gaussian"
             chi = np.random.rand(3, 3)
+
         chi /= chi.sum()
 
         USE_WANDB = True
@@ -217,7 +232,7 @@ if __name__ == "__main__":
             wandb.init(
                 project="bp_fixed_point",
                 name=f"N{N}_D{D}_H{H}_seed{SEED}_{initialization_chi}_{settingmu}",
-                group=f"N{N}_D{D}_{settingmu}", 
+                group=f"FIXED_N{N}_D{D}_{settingmu}", 
                 config={
                     "N": N,
                     "D": D,
