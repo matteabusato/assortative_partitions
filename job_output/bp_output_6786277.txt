@@ -1,7 +1,0 @@
-/var/spool/slurmd/job6786277/slurm_script: line 19: /home/busato/venvs/assortative_partitions/venv/bin/activate: No such file or directory
-Traceback (most recent call last):
-  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 193, in <module>
-    raise ImportError("wandb is not installed in this environment. `pip install wandb` first.")
-ImportError: wandb is not installed in this environment. `pip install wandb` first.
-srun: error: h121: task 0: Exited with exit code 1
-srun: Terminating StepId=6786277.0

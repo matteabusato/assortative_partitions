@@ -1,6 +1,0 @@
-{"time":"2026-02-12T14:38:39.359839029+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
-{"time":"2026-02-12T14:38:39.64998105+01:00","level":"INFO","msg":"stream: created new stream","id":"eej1jdll"}
-{"time":"2026-02-12T14:38:39.650153667+01:00","level":"INFO","msg":"handler: started","stream_id":"eej1jdll"}
-{"time":"2026-02-12T14:38:39.65054967+01:00","level":"INFO","msg":"stream: started","id":"eej1jdll"}
-{"time":"2026-02-12T14:38:39.651421838+01:00","level":"INFO","msg":"writer: started","stream_id":"eej1jdll"}
-{"time":"2026-02-12T14:38:39.651489591+01:00","level":"INFO","msg":"sender: started","stream_id":"eej1jdll"}
