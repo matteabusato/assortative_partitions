@@ -1,0 +1,14 @@
+{"time":"2026-02-24T14:54:31.239285285+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-02-24T14:54:31.528449559+01:00","level":"INFO","msg":"stream: created new stream","id":"wy1i5j4x"}
+{"time":"2026-02-24T14:54:31.528756443+01:00","level":"INFO","msg":"handler: started","stream_id":"wy1i5j4x"}
+{"time":"2026-02-24T14:54:31.529142829+01:00","level":"INFO","msg":"stream: started","id":"wy1i5j4x"}
+{"time":"2026-02-24T14:54:31.52915994+01:00","level":"INFO","msg":"sender: started","stream_id":"wy1i5j4x"}
+{"time":"2026-02-24T14:54:31.529158984+01:00","level":"INFO","msg":"writer: started","stream_id":"wy1i5j4x"}
+{"time":"2026-02-24T18:24:17.178931256+01:00","level":"INFO","msg":"api: retrying HTTP error","status":502,"url":"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/wy1i5j4x/file_stream","body":"\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n"}
+{"time":"2026-02-24T18:26:53.234892284+01:00","level":"INFO","msg":"api: retrying HTTP error","status":502,"url":"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/wy1i5j4x/file_stream","body":"\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n"}
+{"time":"2026-02-24T18:54:38.709309979+01:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-02-24T18:54:38.935796983+01:00","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2026-02-24T18:54:38.939382542+01:00","level":"INFO","msg":"stream: closing","id":"wy1i5j4x"}
+{"time":"2026-02-24T18:54:38.939399274+01:00","level":"INFO","msg":"handler: closed","stream_id":"wy1i5j4x"}
+{"time":"2026-02-24T18:54:38.939994364+01:00","level":"INFO","msg":"sender: closed","stream_id":"wy1i5j4x"}
+{"time":"2026-02-24T18:54:38.940010604+01:00","level":"INFO","msg":"stream: closed","id":"wy1i5j4x"}

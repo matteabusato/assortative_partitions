@@ -152,6 +152,15 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every
                 "elapsed_sec": elapsed,
                 "sec_since_last_log": step_dt,
                 **metrics,
+                "chi00": float(chi[0, 0]),
+                "chi01": float(chi[0, 1]),
+                "chi02": float(chi[0, 2]),
+                "chi10": float(chi[1, 0]),
+                "chi11": float(chi[1, 1]),
+                "chi12": float(chi[1, 2]),
+                "chi20": float(chi[2, 0]),
+                "chi21": float(chi[2, 1]),
+                "chi22": float(chi[2, 2]),
                 "mu_0": float(mu[0]),
                 "mu_1": float(mu[1]),
                 "mu_2": float(mu[2]),
@@ -196,13 +205,14 @@ if __name__ == "__main__":
     N_RUNS = 1
     DAMPING = 0.01
     MU0 = np.zeros(3)
-    settingmu = "previous"  # can be "always_zero", "zero", "previous",
+    settingmu = "always_zero"  # can be "always_zero", "zero", "previous",
     loss_mu = "soft_l1"  # can be "linear", "soft_l1", "huber", "cauchy", "arctan"
-    initialization_chi = "uniform"  # can be "uniform", "unif_diag", "one_hot", "gaussian", "one_hot_softmax"
+    initialization_chi = "personalized"  # can be "uniform", "unif_diag", "one_hot", "gaussian", "one_hot_softmax"
 
     for _ in range(N_RUNS):
         SEED = np.random.randint(0, 1000000)
         np.random.seed(SEED)
+        epsilon = 25e-2
 
         if initialization_chi == "uniform":
             chi = np.ones((3,3), dtype=float) # dimension (K,K)
@@ -216,8 +226,20 @@ if __name__ == "__main__":
             chi[0,0] = 1.0
         elif initialization_chi == "one_hot_softmax":
             chi = np.zeros((3,3), dtype=float)
-            chi[0,0] = 1.0
-            chi = np.exp(chi) / np.sum(np.exp(chi))
+            chi[0,0] = 1.0 - 8*1e-2
+            chi[0,1] = 1e-2
+            chi[0,2] = 1e-2
+            chi[1,0] = 1e-2
+            chi[1,1] = 1e-2
+            chi[1,2] = 1e-2
+            chi[2,0] = 1e-2
+            chi[2,1] = 1e-2
+            chi[2,2] = 1e-2
+        elif initialization_chi == "personalized":
+            chi = np.zeros((3,3), dtype=float)
+            chi[0,0] = 1 - epsilon
+            chi[1,1] = epsilon/2
+            chi[2,2] = epsilon/2
         else:  # "gaussian"
             chi = np.random.rand(3, 3)
 
@@ -231,7 +253,7 @@ if __name__ == "__main__":
         if USE_WANDB:
             wandb.init(
                 project="bp_fixed_point",
-                name=f"N{N}_D{D}_H{H}_seed{SEED}_{initialization_chi}_{settingmu}",
+                name=f"N{N}_D{D}_H{H}_seed{SEED}_{initialization_chi}_{settingmu}_{epsilon}_chi",
                 group=f"FIXED_N{N}_D{D}_{settingmu}", 
                 config={
                     "N": N,
@@ -259,7 +281,7 @@ if __name__ == "__main__":
             USE_WANDB, loss_mu)
 
         Z_node, Z_edge, phi_RS, m_actual, s = compute_quantities(D, H, chi, mu)
-        n_solutions = float(np.exp(s * N))
+        # n_solutions = float(np.exp(s * N))
 
         if USE_WANDB:
             wandb.summary["converged"] = bool(converged)
@@ -269,7 +291,7 @@ if __name__ == "__main__":
             wandb.summary["Z_edge"] = float(Z_edge)
             wandb.summary["phi_RS"] = float(phi_RS)
             wandb.summary["s"] = float(s)
-            wandb.summary["n_solutions_est"] = float(n_solutions)
+            # wandb.summary["n_solutions_est"] = float(n_solutions)
             wandb.summary["m_err_l2_final"] = float(np.linalg.norm(m_actual - M))
             wandb.summary["m_err_maxabs_final"] = float(np.max(np.abs(m_actual - M)))
 
@@ -286,7 +308,7 @@ if __name__ == "__main__":
                     "iters": int(iters),
                     "total_time_sec": float(total_time),
                     "converged": bool(converged),
-                    "n_solutions_est": float(n_solutions),
+                    # "n_solutions_est": float(n_solutions),
                 }, f, indent=2)
 
             wandb.save("final_results.json")

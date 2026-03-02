@@ -1,0 +1,47 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/busato/.netrc.
+wandb: Currently logged in as: busatomattea (busatomattea-epfl) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run tab3lop7
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260225_105820-tab3lop7
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N1002_D9_H3_seed450310_personalized_always_zero_0.34_chi
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/tab3lop7
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+/home/busato/assortative_partitions/bp_3_assortative.py:178: RuntimeWarning: overflow encountered in exp
+  "estimated_n_solutions": float(np.exp(s_tmp * N))
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: uploading history steps 8357-8401, summary; updating run metadata
+wandb: uploading final_results.json; uploading output.log; uploading wandb-summary.json
+wandb: uploading history steps 8402-8403, summary, console lines 3-3
+wandb: 
+wandb: Run history:
+wandb: Z_edge █▄▁▂▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+wandb: Z_node █▆▄▃▂▁▁▄▄▄▃▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+wandb:  chi00 █▇▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:  chi01 ██▅▁▂▃▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂
+wandb:  chi02 ███████▁▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂
+wandb:  chi10 ▁▁▁▁▃███████████████████████████████████
+wandb:  chi11 ▁▁▁▂▂██▆▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+wandb:  chi12 ▁█▇▅▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆▆
+wandb:  chi20 ▁▁▁▁▂▅▆█▇███████████████████████████████
+wandb:  chi21 ▁▄▄▇█▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+wandb:    +22 ...
+wandb: 
+wandb: Run summary:
+wandb: Z_edge 0.11311
+wandb: Z_node 0.00012
+wandb:  chi00 0.13217
+wandb:  chi01 0.10058
+wandb:  chi02 0.10058
+wandb:  chi10 0.10058
+wandb:  chi11 0.13217
+wandb:  chi12 0.10058
+wandb:  chi20 0.10058
+wandb:  chi21 0.10058
+wandb:    +27 ...
+wandb: 
+wandb: 🚀 View run N1002_D9_H3_seed450310_personalized_always_zero_0.34_chi at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/tab3lop7
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260225_105820-tab3lop7/logs

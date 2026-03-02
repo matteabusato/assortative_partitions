@@ -1,0 +1,12 @@
+{"time":"2026-02-25T10:21:16.255730976+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-02-25T10:21:16.541233387+01:00","level":"INFO","msg":"stream: created new stream","id":"ihgi71it"}
+{"time":"2026-02-25T10:21:16.541347454+01:00","level":"INFO","msg":"handler: started","stream_id":"ihgi71it"}
+{"time":"2026-02-25T10:21:16.542274262+01:00","level":"INFO","msg":"stream: started","id":"ihgi71it"}
+{"time":"2026-02-25T10:21:16.54229138+01:00","level":"INFO","msg":"writer: started","stream_id":"ihgi71it"}
+{"time":"2026-02-25T10:21:16.542295575+01:00","level":"INFO","msg":"sender: started","stream_id":"ihgi71it"}
+{"time":"2026-02-25T11:04:44.329926207+01:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-02-25T11:04:44.602610518+01:00","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2026-02-25T11:04:44.606680413+01:00","level":"INFO","msg":"stream: closing","id":"ihgi71it"}
+{"time":"2026-02-25T11:04:44.606699239+01:00","level":"INFO","msg":"handler: closed","stream_id":"ihgi71it"}
+{"time":"2026-02-25T11:04:44.606953192+01:00","level":"INFO","msg":"sender: closed","stream_id":"ihgi71it"}
+{"time":"2026-02-25T11:04:44.606963705+01:00","level":"INFO","msg":"stream: closed","id":"ihgi71it"}
