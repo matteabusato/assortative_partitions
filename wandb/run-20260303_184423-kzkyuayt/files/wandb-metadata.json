@@ -1,0 +1,37 @@
+{
+  "os":  "macOS-15.6-arm64-arm-64bit",
+  "python":  "CPython 3.9.6",
+  "startedAt":  "2026-03-03T17:44:23.101577Z",
+  "program":  "/Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions/bp_3_assortative.py",
+  "codePath":  "bp_3_assortative.py",
+  "codePathLocal":  "bp_3_assortative.py",
+  "git":  {
+    "remote":  "https://github.com/matteabusato/assortative_partitions.git",
+    "commit":  "996d063f9c66825de5e750f4a42dbd65516ecfc6"
+  },
+  "email":  "busatomattea@gmail.com",
+  "root":  "/Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions",
+  "host":  "Matteas-MacBook-Air.local",
+  "executable":  "/Users/matteabusato/Desktop/SPOC Lab/venvs/assortative_partitions/bin/python",
+  "cpu_count":  10,
+  "cpu_count_logical":  10,
+  "disk":  {
+    "/":  {
+      "total":  "494384795648",
+      "used":  "156259041280"
+    }
+  },
+  "memory":  {
+    "total":  "17179869184"
+  },
+  "apple":  {
+    "name":  "Apple M4",
+    "ecpuCores":  6,
+    "pcpuCores":  4,
+    "gpuCores":  10,
+    "memoryGb":  16,
+    "swapTotalBytes":  "2147483648",
+    "ramTotalBytes":  "17179869184"
+  },
+  "writerId":  "c4we7el4m117pq072eabegf7eolfexcs"
+}

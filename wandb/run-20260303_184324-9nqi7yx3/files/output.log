@@ -1,0 +1,15 @@
+[34m[1mwandb[0m: [33mWARNING[0m Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+/Users/matteabusato/Desktop/SPOC Lab/venvs/assortative_partitions/lib/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py:824: UserWarning: Setting `ftol` below the machine epsilon (2.22e-16) effectively disables the corresponding termination condition.
+  ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
+/Users/matteabusato/Desktop/SPOC Lab/venvs/assortative_partitions/lib/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py:824: UserWarning: Setting `gtol` below the machine epsilon (2.22e-16) effectively disables the corresponding termination condition.
+  ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
+Traceback (most recent call last):
+  File "/Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions/bp_3_assortative.py", line 453, in <module>
+    chi, mu, iters, total_time, converged = run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, DAMPING, MU0, settingmu, LOG_EVERY,
+  File "/Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions/bp_3_assortative.py", line 297, in run_bp
+    chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss, FACTORIALS)
+  File "/Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions/bp_3_assortative.py", line 192, in update_chi
+    second_term += toD(FACTORIALS.get_factorial_chi(r,k)) * term
+  File "/Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions/bp_3_assortative.py", line 82, in get_factorial_chi
+    return self.factorials[r-H+1][k]*Decimal(self.D-r-k)/Decimal(self.D)
+TypeError: unsupported operand type(s) for *: 'float' and 'decimal.Decimal'

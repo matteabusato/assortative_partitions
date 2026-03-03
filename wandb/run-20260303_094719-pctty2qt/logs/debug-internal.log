@@ -1,0 +1,6 @@
+{"time":"2026-03-03T09:47:20.196347+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-03-03T09:47:20.777116+01:00","level":"INFO","msg":"stream: created new stream","id":"pctty2qt"}
+{"time":"2026-03-03T09:47:20.777172+01:00","level":"INFO","msg":"handler: started","stream_id":"pctty2qt"}
+{"time":"2026-03-03T09:47:20.777325+01:00","level":"INFO","msg":"writer: started","stream_id":"pctty2qt"}
+{"time":"2026-03-03T09:47:20.77733+01:00","level":"INFO","msg":"stream: started","id":"pctty2qt"}
+{"time":"2026-03-03T09:47:20.777349+01:00","level":"INFO","msg":"sender: started","stream_id":"pctty2qt"}

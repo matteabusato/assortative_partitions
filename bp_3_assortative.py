@@ -27,7 +27,6 @@ def lnD(x: Decimal) -> Decimal:
     return x.ln()
 
 def powD(base: Decimal, exp: int) -> Decimal:
-    # exp is always a nonnegative int in your code
     if exp == 0:
         return D1
     if base == D0:
@@ -41,33 +40,49 @@ except ImportError:
     WANDB_AVAILABLE = False
 
 def wandb_sanitize(x):
-    # scalars
     if isinstance(x, Decimal):
-        # choose float for plotting; use str if you want exactness
         return float(x)
     if isinstance(x, (np.floating,)):
         return float(x)
     if isinstance(x, (np.integer,)):
         return int(x)
 
-    # numpy arrays
     if isinstance(x, np.ndarray):
         return [wandb_sanitize(v) for v in x.tolist()]
 
-    # containers
     if isinstance(x, dict):
         return {k: wandb_sanitize(v) for k, v in x.items()}
     if isinstance(x, (list, tuple)):
         return [wandb_sanitize(v) for v in x]
-
-    # pass-through for JSON-safe types
+    
     return x
 
 def json_decimal(obj):
-    # json.dump(..., default=json_decimal) will call this for unknown types
     if isinstance(obj, Decimal):
         return str(obj)
     raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+class Factorial():
+    def __init__(self, D, H):
+        self.D = D
+        self.H = H
+
+        factorials = np.zeros((D-H+2, D-H+2))
+        for i in range(D-H+2):
+            r = i+H-1
+            c1 = math.comb(D, r)
+            for j in range(D-H+2):
+                k = j
+                c2 = math.comb(D-r, k)
+                factorials[i][j] = Decimal(c1 * c2)
+
+        self.factorials = factorials                  
+
+    def get_factorial_chi(self, r, k):
+        return toD(self.factorials[r-H+1][k])*toD(self.D-r-k)/toD(self.D)
+    
+    def get_factorial_Z_node(self, r, k):
+        return self.factorials[r-H+1][k]
 
 def assign_f(i):
     if i == 0:
@@ -90,36 +105,20 @@ def normalize_chi_decimal(chi):
     return chi
 
 def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear', settingmu="previous"):
-    """
-    Accepts D, M_star, chi, mu0 as Decimal/object arrays (or floats),
-    runs SciPy least_squares in float64 (required),
-    returns mu as Decimal object array (with the same sign convention: -res.x).
-    """
-
-    # ---- 1) Normalize types for inputs ----
-    # D might be int, float, Decimal -> need float for SciPy internals
     D_int = int(D) if isinstance(D, (int, np.integer)) else int(float(D))
     Df = float(D_int)
-
-    # M_star: could be Decimal object array -> float64 vector
     M_star_f = np.array([float(M_star[i]) for i in range(3)], dtype=float)
-
-    # chi: could be Decimal object matrix -> float64 matrix
     chi_f = np.array([[float(chi[i, j]) for j in range(3)] for i in range(3)], dtype=float)
-
-    # mu0: could be Decimal object vec -> float64 vector
     if isinstance(mu0, np.ndarray) and mu0.dtype == object:
         mu0_f = np.array([float(mu0[i]) for i in range(3)], dtype=float)
     else:
         mu0_f = np.array(mu0, dtype=float)
 
-    # handle "settingmu" logic (same behavior as before)
     if settingmu == "zero":
         mu0_f = np.zeros(3, dtype=float)
     elif settingmu == "previous":
         mu0_f = mu0_f
 
-    # ---- 2) Define residuals in float space (same math as your original) ----
     def m_values_f(mu):
         mu1, mu2, mu3 = mu
 
@@ -155,7 +154,6 @@ def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear', settingmu="p
     def residuals_f(mu):
         return m_values_f(mu) - M_star_f
 
-    # ---- 3) Run SciPy least_squares (float) ----
     res = least_squares(
         residuals_f,
         mu0_f,
@@ -166,19 +164,15 @@ def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear', settingmu="p
         gtol=1e-21,
     )
 
-    mu_sol_f = -res.x  # keep your sign convention
+    mu_sol_f = -res.x # -!!
 
-    # ---- 4) Convert back to Decimal output ----
     mu_sol = np.array([Decimal(str(mu_sol_f[i])) for i in range(3)], dtype=object)
     return mu_sol
 
-def update_chi(D: int, H: int, M, THRESHOLD, MAX_ITER, chi, damping: Decimal, mu0, settingmu, loss):
+def update_chi(D: int, H: int, M, THRESHOLD, MAX_ITER, chi, damping: Decimal, mu0, settingmu, loss, FACTORIALS):
     Dd = toD(D)
 
-    chi_new = np.empty((3, 3), dtype=object)
-    for a in range(3):
-        for b in range(3):
-            chi_new[a, b] = chi[a, b]
+    chi_new = chi.copy()
 
     if settingmu != "always_zero":
         mu = find_current_mu(D, M, chi, mu0, loss=loss, settingmu=settingmu)
@@ -189,17 +183,11 @@ def update_chi(D: int, H: int, M, THRESHOLD, MAX_ITER, chi, damping: Decimal, mu
         f1, f2, f3 = assign_f(i)
         for j in range(3):
             second_term = D0
-
             r_start = H - (1 if i == j else 0)
-
             for r in range(r_start, D):
-                c1 = math.comb(D - 1, r)
                 for k in range(0, D - r):
-                    c2 = math.comb(D - 1 - r, k)
-                    coeff = Decimal(c1 * c2)
-
                     term = powD(chi[f1, i], r) * powD(chi[f2, i], k) * powD(chi[f3, i], D - 1 - r - k)
-                    second_term += coeff * term
+                    second_term += toD(FACTORIALS.get_factorial_chi(r,k)) * term
 
             expo = expD(-(D1 / Dd) * (mu[i] + mu[j]))
             chi_new[i, j] = damping * expo * second_term + (D1 - damping) * chi[i, j]
@@ -207,16 +195,14 @@ def update_chi(D: int, H: int, M, THRESHOLD, MAX_ITER, chi, damping: Decimal, mu
     chi_new = normalize_chi_decimal(chi_new)
     return chi_new, mu
 
-def compute_Z_node(D: int, H: int, chi):
+def compute_Z_node(D: int, H: int, chi, FACTORIALS):
     Z_node = D0
     for i in range(3):
         f1, f2, f3 = assign_f(i)
         for r in range(H, D + 1):
-            cDr = math.comb(D, r)
             for k in range(0, D - r + 1):
-                c = cDr * math.comb(D - r, k)
                 term = powD(chi[f1, i], r) * powD(chi[f2, i], k) * powD(chi[f3, i], D - r - k)
-                Z_node += Decimal(c) * term
+                Z_node += toD(FACTORIALS.get_factorial_Z_node(r, k)) * term
     return Z_node
 
 def compute_Z_edge(D: int, mu, chi):
@@ -265,8 +251,8 @@ def compute_entropy(phi_RS: Decimal, mu, m_actual):
         dot += mu[i] * m_actual[i]
     return phi_RS + dot
 
-def compute_quantities(D: int, H: int, chi, mu):
-    Z_node = compute_Z_node(D, H, chi)
+def compute_quantities(D: int, H: int, chi, mu, FACTORIALS):
+    Z_node = compute_Z_node(D, H, chi, FACTORIALS)
     Z_edge = compute_Z_edge(D, mu, chi)
     phi_RS = compute_phi_RS(D, Z_node, Z_edge)
     m_actual = compute_m_actual(D, mu, Z_edge, chi)
@@ -295,7 +281,7 @@ def chi_metrics_decimal(chi_new, chi_old):
         "chi_entropy": ent,
     }
 
-def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every=1000, use_wandb=False, loss='linear'):
+def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every=1000, use_wandb=False, loss='linear', FACTORIALS=None):
     mu = mu0.copy()
     iter = 0
     t0 = time.time()
@@ -304,7 +290,7 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every
 
     while iter < MAX_ITER:
         chi_old = chi.copy()
-        chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss)
+        chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss, FACTORIALS)
         
         metrics = chi_metrics_decimal(chi_new, chi_old)
         diff = metrics["chi_diff_max"]
@@ -315,7 +301,7 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every
             step_dt = time.time() - last_log_t
             last_log_t = time.time()
 
-            Z_node_tmp, Z_edge_tmp, phi_RS_tmp, m_actual_tmp, s_tmp = compute_quantities(D, H, chi, mu)
+            Z_node_tmp, Z_edge_tmp, phi_RS_tmp, m_actual_tmp, s_tmp = compute_quantities(D, H, chi, mu, FACTORIALS)
             m_err = m_actual_tmp - M
 
             log_payload = {
@@ -373,9 +359,17 @@ if __name__ == "__main__":
     N_RUNS = 1
     DAMPING = toD("0.01")
     MU0 = np.array([D0, D0, D0], dtype=object)
-    settingmu = "always_zero"  # can be "always_zero", "zero", "previous",
+    settingmu = "previous"  # can be "always_zero", "zero", "previous",
     loss_mu = "soft_l1"  # can be "linear", "soft_l1", "huber", "cauchy", "arctan"
-    initialization_chi = "personalized"  # can be "uniform", "unif_diag", "one_hot", "gaussian", "one_hot_softmax"
+    initialization_chi = "uniform"  # can be "uniform", "unif_diag", "one_hot", "gaussian", "one_hot_softmax"
+
+    FACTORIALS = Factorial(D, H)
+
+    # print(FACTORIALS.factorials)
+
+    # for r in range(H-1, D ):
+    #     for k in range(0, D - r):
+    #         print( FACTORIALS.get_factorial_chi(r, k))
 
     for _ in range(N_RUNS):
         SEED = np.random.randint(0, 1000000)
@@ -383,7 +377,7 @@ if __name__ == "__main__":
         epsilon = toD("29e-2")
 
         if initialization_chi == "uniform":
-            chi = np.ones((3,3), dtype=float) # dimension (K,K)
+            chi = np.array([[D1, D1, D1],[D1, D1, D1],[D1, D1, D1]], dtype=object) # dimension (K,K)
         elif initialization_chi == "unif_diag":
             chi = np.zeros((3,3), dtype=float)
             chi[0,0] = 1/3
@@ -409,8 +403,8 @@ if __name__ == "__main__":
                 for j in range(3):
                     chi[i,j] = D0
             chi[0,0] = D1 - epsilon
-            chi[1,1] = epsilon/toD(D2)
-            chi[2,2] = epsilon/toD(D2)
+            chi[1,1] = epsilon/D2
+            chi[2,2] = epsilon/D2
             # chi = np.zeros((3,3), dtype=float)
             # chi[0,0] = 1 - epsilon
             # chi[1,1] = epsilon/2
@@ -453,9 +447,9 @@ if __name__ == "__main__":
             wandb.save("chi_init.json")    
 
         chi, mu, iters, total_time, converged = run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, DAMPING, MU0, settingmu, LOG_EVERY,
-            USE_WANDB, loss_mu)
+            USE_WANDB, loss_mu, FACTORIALS)
 
-        Z_node, Z_edge, phi_RS, m_actual, s = compute_quantities(D, H, chi, mu)
+        Z_node, Z_edge, phi_RS, m_actual, s = compute_quantities(D, H, chi, mu, FACTORIALS)
         # n_solutions = float(np.exp(s * N))
 
         if USE_WANDB:

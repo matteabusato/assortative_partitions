@@ -1,0 +1,22 @@
+{"time":"2026-03-03T13:48:21.716702+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-03-03T13:48:22.354356+01:00","level":"INFO","msg":"stream: created new stream","id":"vsyg8med"}
+{"time":"2026-03-03T13:48:22.354548+01:00","level":"INFO","msg":"handler: started","stream_id":"vsyg8med"}
+{"time":"2026-03-03T13:48:22.354716+01:00","level":"INFO","msg":"writer: started","stream_id":"vsyg8med"}
+{"time":"2026-03-03T13:48:22.354727+01:00","level":"INFO","msg":"stream: started","id":"vsyg8med"}
+{"time":"2026-03-03T13:48:22.354874+01:00","level":"INFO","msg":"sender: started","stream_id":"vsyg8med"}
+{"time":"2026-03-03T14:14:32.886865+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/vsyg8med/file_stream\": read tcp 10.250.36.87:49860->35.186.228.49:443: read: operation timed out"}
+{"time":"2026-03-03T14:15:05.026764+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/vsyg8med/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-03T14:15:21.676049+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/vsyg8med/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-03T14:15:31.066929+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/vsyg8med/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-03T14:31:02.480352+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/vsyg8med/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-03T14:50:46.773084+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/vsyg8med/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-03T15:22:37.166155+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/vsyg8med/file_stream\": read tcp 172.20.10.2:50613->35.186.228.49:443: read: operation timed out"}
+{"time":"2026-03-03T15:53:00.086606+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/vsyg8med/file_stream\": read tcp 172.20.10.2:50923->35.186.228.49:443: read: operation timed out"}
+{"time":"2026-03-03T16:08:02.135434+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/vsyg8med/file_stream\": read tcp 172.20.10.2:51137->35.186.228.49:443: read: operation timed out"}
+{"time":"2026-03-03T16:14:40.238882+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/vsyg8med/file_stream\": read tcp 172.20.10.2:51211->35.186.228.49:443: read: operation timed out"}
+{"time":"2026-03-03T16:48:20.287444+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/vsyg8med/file_stream\": read tcp 10.250.36.42:51360->35.186.228.49:443: read: can't assign requested address"}
+{"time":"2026-03-03T18:01:59.81464+01:00","level":"INFO","msg":"stream: closing","id":"vsyg8med"}
+{"time":"2026-03-03T18:02:01.238885+01:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-03-03T18:02:01.976264+01:00","level":"INFO","msg":"handler: closed","stream_id":"vsyg8med"}
+{"time":"2026-03-03T18:02:01.976923+01:00","level":"INFO","msg":"sender: closed","stream_id":"vsyg8med"}
+{"time":"2026-03-03T18:02:01.976956+01:00","level":"INFO","msg":"stream: closed","id":"vsyg8med"}

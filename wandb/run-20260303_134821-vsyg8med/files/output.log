@@ -1,0 +1,10 @@
+[34m[1mwandb[0m: [33mWARNING[0m Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+Traceback (most recent call last):
+  File "/Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions/bp_3_assortative.py", line 452, in <module>
+    #         wandb.summary["converged"] = bool(converged)
+  File "/Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions/bp_3_assortative.py", line 304, in run_bp
+    Z_node_tmp, Z_edge_tmp, phi_RS_tmp, m_actual_tmp, s_tmp = compute_quantities(D, H, chi, mu, FACTORIALS)
+  File "/Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions/bp_3_assortative.py", line 198, in update_chi
+    def compute_Z_node(D: int, H: int, chi, FACTORIALS):
+  File "/Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions/bp_3_assortative.py", line 35, in powD
+KeyboardInterrupt

@@ -1,0 +1,17 @@
+{
+  "os":  "macOS-15.6-arm64-arm-64bit",
+  "python":  "CPython 3.9.6",
+  "startedAt":  "2026-03-03T17:43:24.077974Z",
+  "program":  "/Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions/bp_3_assortative.py",
+  "codePath":  "bp_3_assortative.py",
+  "codePathLocal":  "bp_3_assortative.py",
+  "git":  {
+    "remote":  "https://github.com/matteabusato/assortative_partitions.git",
+    "commit":  "996d063f9c66825de5e750f4a42dbd65516ecfc6"
+  },
+  "email":  "busatomattea@gmail.com",
+  "root":  "/Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions",
+  "host":  "Matteas-MacBook-Air.local",
+  "executable":  "/Users/matteabusato/Desktop/SPOC Lab/venvs/assortative_partitions/bin/python",
+  "writerId":  "oryxdgh4nocgvvnglc2qbyxj9q4p99b4"
+}
