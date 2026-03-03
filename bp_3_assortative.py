@@ -86,11 +86,11 @@ class Factorial():
 
 def assign_f(i):
     if i == 0:
-        return 0, 1, 2
+        return [0, 1, 2]
     elif i == 1:
-        return 1, 2, 0
+        return [1, 2, 0]
     else:
-        return 2, 0, 1
+        return [2, 0, 1]
     
 def normalize_chi_decimal(chi):
     total = D0
@@ -180,17 +180,22 @@ def update_chi(D: int, H: int, M, THRESHOLD, MAX_ITER, chi, damping: Decimal, mu
         mu = np.array([D0, D0, D0], dtype=object)
 
     for i in range(3):
-        f1, f2, f3 = assign_f(i)
-        for j in range(3):
-            second_term = D0
-            r_start = H - (1 if i == j else 0)
-            for r in range(r_start, D):
-                for k in range(0, D - r):
-                    term = powD(chi[f1, i], r) * powD(chi[f2, i], k) * powD(chi[f3, i], D - 1 - r - k)
-                    second_term += toD(FACTORIALS.get_factorial_chi(r,k)) * term
+        f = assign_f(i)
 
-            expo = expD(-(D1 / Dd) * (mu[i] + mu[j]))
-            chi_new[i, j] = damping * expo * second_term + (D1 - damping) * chi[i, j]
+        second_term = D0
+        for r in range(H, D):
+            for k in range(0, D - r):
+                term = powD(chi[f[0], i], r) * powD(chi[f[1], i], k) * powD(chi[f[2], i], D - 1 - r - k)
+                second_term += toD(FACTORIALS.get_factorial_chi(r,k)) * term
+
+        chi_new[i, f[1]] = damping * expD(-(D1 / Dd) * (mu[i] + mu[f[1]])) * second_term + (D1 - damping) * chi[i, f[1]]
+        chi_new[i, f[2]] = damping * expD(-(D1 / Dd) * (mu[i] + mu[f[2]])) * second_term + (D1 - damping) * chi[i, f[2]]
+
+        for k in range(0, D - H - 1):
+            term = powD(chi[f[0], i], r) * powD(chi[f[1], i], k) * powD(chi[f[2], i], D - 1 - r - k)
+            second_term += toD(FACTORIALS.get_factorial_chi(r,k)) * term
+
+        chi_new[i, f[0]] = damping * expD(-(D1 / Dd) * (mu[i] + mu[f[0]])) * second_term + (D1 - damping) * chi[i, f[0]]
 
     chi_new = normalize_chi_decimal(chi_new)
     return chi_new, mu
@@ -198,10 +203,10 @@ def update_chi(D: int, H: int, M, THRESHOLD, MAX_ITER, chi, damping: Decimal, mu
 def compute_Z_node(D: int, H: int, chi, FACTORIALS):
     Z_node = D0
     for i in range(3):
-        f1, f2, f3 = assign_f(i)
+        f = assign_f(i)
         for r in range(H, D + 1):
             for k in range(0, D - r + 1):
-                term = powD(chi[f1, i], r) * powD(chi[f2, i], k) * powD(chi[f3, i], D - r - k)
+                term = powD(chi[f[0], i], r) * powD(chi[f[1], i], k) * powD(chi[f[2], i], D - r - k)
                 Z_node += toD(FACTORIALS.get_factorial_Z_node(r, k)) * term
     return Z_node
 
