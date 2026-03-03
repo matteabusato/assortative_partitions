@@ -1,0 +1,24 @@
+2026-02-24 14:54:30,973 INFO    MainThread:1866679 [wandb_setup.py:_flush():81] Current SDK version is 0.24.2
+2026-02-24 14:54:30,973 INFO    MainThread:1866679 [wandb_setup.py:_flush():81] Configure stats pid to 1866679
+2026-02-24 14:54:30,973 INFO    MainThread:1866679 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-02-24 14:54:30,973 INFO    MainThread:1866679 [wandb_init.py:setup_run_log_directory():717] Logging user logs to /home/busato/assortative_partitions/wandb/run-20260224_145430-wy1i5j4x/logs/debug.log
+2026-02-24 14:54:30,973 INFO    MainThread:1866679 [wandb_init.py:setup_run_log_directory():718] Logging internal logs to /home/busato/assortative_partitions/wandb/run-20260224_145430-wy1i5j4x/logs/debug-internal.log
+2026-02-24 14:54:30,973 INFO    MainThread:1866679 [wandb_init.py:init():844] calling init triggers
+2026-02-24 14:54:30,973 INFO    MainThread:1866679 [wandb_init.py:init():849] wandb.init called with sweep_config: {}
+config: {'N': 1002, 'D': 9, 'H': 3, 'M_target': [0.3333333333333333, 0.3333333333333333, 0.3333333333333333], 'THRESHOLD': 1e-21, 'MAX_ITER': 10000000, 'damping': 0.01, 'mu0': [0.0, 0.0, 0.0], 'settingmu': 'zero', 'LOG_EVERY': 1000, 'chi_init': [[0.16412221683473247, 0.13579680041151415, 0.09390154531623066], [0.1287045610598073, 0.1936662129161651, 0.06040616961511847], [0.1230361065952391, 0.09987108800354669, 0.0004952992476461508]], 'initialization_chi': 'gaussian', 'seed': 493649, 'loss_mu': 'soft_l1', '_wandb': {}}
+2026-02-24 14:54:30,973 INFO    MainThread:1866679 [wandb_init.py:init():892] starting backend
+2026-02-24 14:54:31,219 INFO    MainThread:1866679 [wandb_init.py:init():895] sending inform_init request
+2026-02-24 14:54:31,236 INFO    MainThread:1866679 [wandb_init.py:init():903] backend started and connected
+2026-02-24 14:54:31,262 INFO    MainThread:1866679 [wandb_init.py:init():973] updated telemetry
+2026-02-24 14:54:31,279 INFO    MainThread:1866679 [wandb_init.py:init():997] communicating run to backend with 90.0 second timeout
+2026-02-24 14:54:31,995 INFO    MainThread:1866679 [wandb_init.py:init():1042] starting run threads in backend
+2026-02-24 14:54:32,043 INFO    MainThread:1866679 [wandb_run.py:_console_start():2529] atexit reg
+2026-02-24 14:54:32,043 INFO    MainThread:1866679 [wandb_run.py:_redirect():2377] redirect: wrap_raw
+2026-02-24 14:54:32,044 INFO    MainThread:1866679 [wandb_run.py:_redirect():2446] Wrapping output streams.
+2026-02-24 14:54:32,044 INFO    MainThread:1866679 [wandb_run.py:_redirect():2469] Redirects installed.
+2026-02-24 14:54:32,051 INFO    MainThread:1866679 [wandb_init.py:init():1082] run started, returning control to user process
+2026-02-24 18:54:37,389 INFO    MainThread:1866679 [wandb_run.py:_finish():2295] finishing run busatomattea-epfl/bp_fixed_point/wy1i5j4x
+2026-02-24 18:54:37,389 INFO    MainThread:1866679 [wandb_run.py:_atexit_cleanup():2494] got exitcode: 0
+2026-02-24 18:54:37,391 INFO    MainThread:1866679 [wandb_run.py:_restore():2476] restore
+2026-02-24 18:54:37,391 INFO    MainThread:1866679 [wandb_run.py:_restore():2482] restore done
+2026-02-24 18:54:38,938 INFO    MainThread:1866679 [wandb_run.py:_footer_sync_info():3871] logging synced files

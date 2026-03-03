@@ -1,0 +1,12 @@
+{"time":"2026-02-24T16:29:39.263453849+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-02-24T16:29:39.545692185+01:00","level":"INFO","msg":"stream: created new stream","id":"cuq700ri"}
+{"time":"2026-02-24T16:29:39.545740922+01:00","level":"INFO","msg":"handler: started","stream_id":"cuq700ri"}
+{"time":"2026-02-24T16:29:39.546213711+01:00","level":"INFO","msg":"stream: started","id":"cuq700ri"}
+{"time":"2026-02-24T16:29:39.546231241+01:00","level":"INFO","msg":"sender: started","stream_id":"cuq700ri"}
+{"time":"2026-02-24T16:29:39.546238619+01:00","level":"INFO","msg":"writer: started","stream_id":"cuq700ri"}
+{"time":"2026-02-24T17:13:50.059809457+01:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-02-24T17:13:50.310232091+01:00","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2026-02-24T17:13:50.313681904+01:00","level":"INFO","msg":"stream: closing","id":"cuq700ri"}
+{"time":"2026-02-24T17:13:50.313696486+01:00","level":"INFO","msg":"handler: closed","stream_id":"cuq700ri"}
+{"time":"2026-02-24T17:13:50.313885594+01:00","level":"INFO","msg":"sender: closed","stream_id":"cuq700ri"}
+{"time":"2026-02-24T17:13:50.313894543+01:00","level":"INFO","msg":"stream: closed","id":"cuq700ri"}

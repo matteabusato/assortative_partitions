@@ -1,0 +1,13 @@
+{"time":"2026-02-24T14:58:35.278953146+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-02-24T14:58:35.558437545+01:00","level":"INFO","msg":"stream: created new stream","id":"ixcszcfc"}
+{"time":"2026-02-24T14:58:35.55851968+01:00","level":"INFO","msg":"handler: started","stream_id":"ixcszcfc"}
+{"time":"2026-02-24T14:58:35.55876733+01:00","level":"INFO","msg":"stream: started","id":"ixcszcfc"}
+{"time":"2026-02-24T14:58:35.558784735+01:00","level":"INFO","msg":"sender: started","stream_id":"ixcszcfc"}
+{"time":"2026-02-24T14:58:35.558787359+01:00","level":"INFO","msg":"writer: started","stream_id":"ixcszcfc"}
+{"time":"2026-02-24T21:01:21.16583773+01:00","level":"INFO","msg":"api: retrying HTTP error","status":502,"url":"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/ixcszcfc/file_stream","body":"\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n"}
+{"time":"2026-02-24T23:06:30.074575436+01:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-02-24T23:06:30.35985596+01:00","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2026-02-24T23:06:30.363447285+01:00","level":"INFO","msg":"stream: closing","id":"ixcszcfc"}
+{"time":"2026-02-24T23:06:30.363461894+01:00","level":"INFO","msg":"handler: closed","stream_id":"ixcszcfc"}
+{"time":"2026-02-24T23:06:30.363792673+01:00","level":"INFO","msg":"sender: closed","stream_id":"ixcszcfc"}
+{"time":"2026-02-24T23:06:30.363802754+01:00","level":"INFO","msg":"stream: closed","id":"ixcszcfc"}

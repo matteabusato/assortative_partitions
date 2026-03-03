@@ -1,0 +1,46 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/busato/.netrc.
+wandb: Currently logged in as: busatomattea (busatomattea-epfl) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run yci7w7s1
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260225_102215-yci7w7s1
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N1002_D9_H3_seed251514_personalized_always_zero_0.46
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/yci7w7s1
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+/home/busato/assortative_partitions/bp_3_assortative.py:169: RuntimeWarning: overflow encountered in exp
+  "estimated_n_solutions": float(np.exp(s_tmp * N))
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading history steps 7812-7833, summary, console lines 3-3
+wandb: 
+wandb: Run history:
+wandb:            Z_edge █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:            Z_node █▃▇▁▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃
+wandb:       chi_diff_l2 █▄▇▇▃▁▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:      chi_diff_max █▇▃▃▃▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb: chi_diff_mean_abs ▄█▂▃▂▂▁▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:       chi_entropy ▁███████████████████████████████████████
+wandb:           chi_max █▂▁▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           chi_min ▁▁▂▇█▅█▇████████████████████████████████
+wandb:       elapsed_sec ▁▁▁▁▁▁▂▂▂▂▃▃▃▃▃▄▄▄▄▄▄▅▅▅▅▆▆▆▆▆▇▇▇▇▇█████
+wandb:              iter ▁▁▁▁▂▂▂▂▃▃▃▃▃▄▄▅▅▅▅▅▅▅▅▅▅▅▆▆▆▆▆▆▆▆▇▇▇███
+wandb:               +13 ...
+wandb: 
+wandb: Run summary:
+wandb:            Z_edge 0.11311
+wandb:            Z_node 0.00012
+wandb:       chi_diff_l2 0.0
+wandb:      chi_diff_max 0.0
+wandb: chi_diff_mean_abs 0.0
+wandb:       chi_entropy 2.18849
+wandb:           chi_max 0.13217
+wandb:           chi_min 0.10058
+wandb:         converged True
+wandb:       elapsed_sec 2691.98187
+wandb:               +18 ...
+wandb: 
+wandb: 🚀 View run N1002_D9_H3_seed251514_personalized_always_zero_0.46 at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/yci7w7s1
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260225_102215-yci7w7s1/logs
