@@ -1,0 +1,6 @@
+{"time":"2026-02-12T14:30:31.33925177+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-02-12T14:30:31.627516127+01:00","level":"INFO","msg":"stream: created new stream","id":"eitod90x"}
+{"time":"2026-02-12T14:30:31.627663327+01:00","level":"INFO","msg":"handler: started","stream_id":"eitod90x"}
+{"time":"2026-02-12T14:30:31.628299322+01:00","level":"INFO","msg":"stream: started","id":"eitod90x"}
+{"time":"2026-02-12T14:30:31.628324284+01:00","level":"INFO","msg":"sender: started","stream_id":"eitod90x"}
+{"time":"2026-02-12T14:30:31.628326366+01:00","level":"INFO","msg":"writer: started","stream_id":"eitod90x"}
