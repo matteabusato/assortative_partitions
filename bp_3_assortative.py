@@ -49,7 +49,7 @@ def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear', settingmu="p
     elif settingmu=="previous":
         mu0 = mu0
 
-    res = least_squares(residuals, mu0, method="trf", loss=loss, xtol=2.23e-16, ftol=1e-21, gtol=1e-21)
+    res = least_squares(residuals, mu0, method="trf", loss=loss, xtol=2.23e-16, ftol=2.23e-16, gtol=2.23e-16)
 
     return -res.x  # minus sign super important !
 
@@ -192,12 +192,12 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every
 if __name__ == "__main__":
     K = 3  # Number of groups
     N = 1002
-    D = 9
+    D = 100
 
     if (N*D) % 2 != 0 or (N % K != 0):
         raise ValueError("N*D must be even to construct a valid graph without self-loops or multiple edges and N must be a multiple of K.")
 
-    H = 3
+    H = 32
     M = np.array([1/3, 1/3, 1/3])
     THRESHOLD = 1e-21
     MAX_ITER = 10000000
@@ -205,14 +205,14 @@ if __name__ == "__main__":
     N_RUNS = 1
     DAMPING = 0.01
     MU0 = np.zeros(3)
-    settingmu = "always_zero"  # can be "always_zero", "zero", "previous",
+    settingmu = "previous"  # can be "always_zero", "zero", "previous",
     loss_mu = "soft_l1"  # can be "linear", "soft_l1", "huber", "cauchy", "arctan"
-    initialization_chi = "personalized"  # can be "uniform", "unif_diag", "one_hot", "gaussian", "one_hot_softmax"
+    initialization_chi = "unif_diag"  # can be "uniform", "unif_diag", "one_hot", "gaussian", "one_hot_softmax"
 
     for _ in range(N_RUNS):
         SEED = np.random.randint(0, 1000000)
         np.random.seed(SEED)
-        epsilon = 25e-2
+        epsilon = 0.01
 
         if initialization_chi == "uniform":
             chi = np.ones((3,3), dtype=float) # dimension (K,K)

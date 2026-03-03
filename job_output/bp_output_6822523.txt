@@ -1,0 +1,49 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/busato/.netrc.
+wandb: Currently logged in as: busatomattea (busatomattea-epfl) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run 09yscw5v
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260303_104856-09yscw5v
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N1002_D100_H32_seed830089_unif_diag_previous_0.01_chi
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/09yscw5v
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py:824: UserWarning: Setting `ftol` below the machine epsilon (2.22e-16) effectively disables the corresponding termination condition.
+  ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
+/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py:824: UserWarning: Setting `gtol` below the machine epsilon (2.22e-16) effectively disables the corresponding termination condition.
+  ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading final_results.json; uploading output.log; uploading wandb-summary.json; uploading config.yaml; uploading wandb-metadata.json (+ 2 more)
+wandb: uploading history steps 0-0, summary, console lines 1-5
+wandb: 
+wandb: Run history:
+wandb: Z_edge ▁
+wandb: Z_node ▁
+wandb:  chi00 ▁
+wandb:  chi01 ▁
+wandb:  chi02 ▁
+wandb:  chi10 ▁
+wandb:  chi11 ▁
+wandb:  chi12 ▁
+wandb:  chi20 ▁
+wandb:  chi21 ▁
+wandb:    +22 ...
+wandb: 
+wandb: Run summary:
+wandb: Z_edge 0.33333
+wandb: Z_node 0.0
+wandb:  chi00 0.33333
+wandb:  chi01 0.0
+wandb:  chi02 0.0
+wandb:  chi10 0.0
+wandb:  chi11 0.33333
+wandb:  chi12 0.0
+wandb:  chi20 0.0
+wandb:  chi21 0.0
+wandb:    +27 ...
+wandb: 
+wandb: 🚀 View run N1002_D100_H32_seed830089_unif_diag_previous_0.01_chi at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/09yscw5v
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260303_104856-09yscw5v/logs
