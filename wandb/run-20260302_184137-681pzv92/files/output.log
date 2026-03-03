@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 415, in <module>
+    json.dump({"chi_init": chi.tolist()}, f, indent=2)
+  File "/usr/lib64/python3.9/json/__init__.py", line 179, in dump
+    for chunk in iterable:
+  File "/usr/lib64/python3.9/json/encoder.py", line 431, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/usr/lib64/python3.9/json/encoder.py", line 405, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib64/python3.9/json/encoder.py", line 325, in _iterencode_list
+    yield from chunks
+  File "/usr/lib64/python3.9/json/encoder.py", line 325, in _iterencode_list
+    yield from chunks
+  File "/usr/lib64/python3.9/json/encoder.py", line 438, in _iterencode
+    o = _default(o)
+  File "/usr/lib64/python3.9/json/encoder.py", line 179, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type Decimal is not JSON serializable

@@ -1,0 +1,9 @@
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+Traceback (most recent call last):
+  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 424, in <module>
+    chi, mu, iters, total_time, converged = run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, DAMPING, MU0, settingmu, LOG_EVERY,
+  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 276, in run_bp
+    chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss)
+  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 170, in update_chi
+    term = (chi[f1, i] ** r) * (chi[f2, i] ** k) * (chi[f3, i] ** (D - 1 - r - k))
+decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]

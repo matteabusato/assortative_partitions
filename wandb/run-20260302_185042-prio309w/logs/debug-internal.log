@@ -1,0 +1,11 @@
+{"time":"2026-03-02T18:50:42.401962834+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-03-02T18:50:42.686227232+01:00","level":"INFO","msg":"stream: created new stream","id":"prio309w"}
+{"time":"2026-03-02T18:50:42.686321415+01:00","level":"INFO","msg":"handler: started","stream_id":"prio309w"}
+{"time":"2026-03-02T18:50:42.686821182+01:00","level":"INFO","msg":"stream: started","id":"prio309w"}
+{"time":"2026-03-02T18:50:42.686839488+01:00","level":"INFO","msg":"sender: started","stream_id":"prio309w"}
+{"time":"2026-03-02T18:50:42.686847461+01:00","level":"INFO","msg":"writer: started","stream_id":"prio309w"}
+{"time":"2026-03-02T18:50:43.314843812+01:00","level":"INFO","msg":"stream: closing","id":"prio309w"}
+{"time":"2026-03-02T18:50:44.729313462+01:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-03-02T18:50:45.147966323+01:00","level":"INFO","msg":"handler: closed","stream_id":"prio309w"}
+{"time":"2026-03-02T18:50:45.148137725+01:00","level":"INFO","msg":"sender: closed","stream_id":"prio309w"}
+{"time":"2026-03-02T18:50:45.148170684+01:00","level":"INFO","msg":"stream: closed","id":"prio309w"}

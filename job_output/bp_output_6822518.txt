@@ -1,0 +1,45 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/busato/.netrc.
+wandb: Currently logged in as: busatomattea (busatomattea-epfl) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run twrf9pzt
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260302_192233-twrf9pzt
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N1002_D9_H3_seed718305_personalized_always_zero_0.31_chi_dec
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/twrf9pzt
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading output.log; uploading wandb-summary.json; uploading config.yaml; uploading final_results.json
+wandb: uploading history steps 8155-8156, summary, console lines 1-1
+wandb: 
+wandb: Run history:
+wandb: Z_edge █▂▂▂▁▁▁▁▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂
+wandb: Z_node █▄▁▁▁▁▁▂▂▂▂▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃
+wandb:  chi00 █▁▁▁▁▁▁▁▁▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂
+wandb:  chi01 ▁▂▃▄▅▅▅▆████████████████████████████████
+wandb:  chi02 ▁▁▄▅▅▅▆▆▆▆▇█████████████████████████████
+wandb:  chi10 █▇▆▆▆▅▄▄▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:  chi11 █▇▆▅▄▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:  chi12 █▇▇▆▆▆▃▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:  chi20 ▇█▇▇▆▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:  chi21 █▆▆▆▅▃▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:    +15 ...
+wandb: 
+wandb: Run summary:
+wandb: Z_edge 0.11111
+wandb: Z_node 5e-05
+wandb:  chi00 0.33333
+wandb:  chi01 0.33333
+wandb:  chi02 0.33333
+wandb:  chi10 0.0
+wandb:  chi11 0.0
+wandb:  chi12 0.0
+wandb:  chi20 0.0
+wandb:  chi21 0.0
+wandb:    +20 ...
+wandb: 
+wandb: 🚀 View run N1002_D9_H3_seed718305_personalized_always_zero_0.31_chi_dec at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/twrf9pzt
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260302_192233-twrf9pzt/logs

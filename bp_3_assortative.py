@@ -4,11 +4,70 @@ import time
 import json
 import math
 
+from decimal import Decimal, getcontext
+
+getcontext().prec = 80
+getcontext().Emax = 999999
+getcontext().Emin = -999999
+
+D0 = Decimal(0)
+D1 = Decimal(1)
+D2 = Decimal(2)
+
+def toD(x) -> Decimal:
+    return x if isinstance(x, Decimal) else Decimal(str(x))
+
+def absD(x: Decimal) -> Decimal:
+    return x.copy_abs()
+
+def expD(x: Decimal) -> Decimal:
+    return x.exp()
+
+def lnD(x: Decimal) -> Decimal:
+    return x.ln()
+
+def powD(base: Decimal, exp: int) -> Decimal:
+    # exp is always a nonnegative int in your code
+    if exp == 0:
+        return D1
+    if base == D0:
+        return D0
+    return base ** exp
+
 try:
     import wandb
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False
+
+def wandb_sanitize(x):
+    # scalars
+    if isinstance(x, Decimal):
+        # choose float for plotting; use str if you want exactness
+        return float(x)
+    if isinstance(x, (np.floating,)):
+        return float(x)
+    if isinstance(x, (np.integer,)):
+        return int(x)
+
+    # numpy arrays
+    if isinstance(x, np.ndarray):
+        return [wandb_sanitize(v) for v in x.tolist()]
+
+    # containers
+    if isinstance(x, dict):
+        return {k: wandb_sanitize(v) for k, v in x.items()}
+    if isinstance(x, (list, tuple)):
+        return [wandb_sanitize(v) for v in x]
+
+    # pass-through for JSON-safe types
+    return x
+
+def json_decimal(obj):
+    # json.dump(..., default=json_decimal) will call this for unknown types
+    if isinstance(obj, Decimal):
+        return str(obj)
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 def assign_f(i):
     if i == 0:
@@ -18,94 +77,195 @@ def assign_f(i):
     else:
         return 2, 0, 1
     
-def normalize_chi(chi):
-    chi_sum = np.sum(chi)
-    if chi_sum > 1e-300:
-        chi = chi / chi_sum
+def normalize_chi_decimal(chi):
+    total = D0
+    for i in range(3):
+        for j in range(3):
+            total += chi[i, j]
+
+    if total != D0:
+        for i in range(3):
+            for j in range(3):
+                chi[i, j] = chi[i, j] / total
     return chi
 
 def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear', settingmu="previous"):
-    def m_values(mu):
+    """
+    Accepts D, M_star, chi, mu0 as Decimal/object arrays (or floats),
+    runs SciPy least_squares in float64 (required),
+    returns mu as Decimal object array (with the same sign convention: -res.x).
+    """
+
+    # ---- 1) Normalize types for inputs ----
+    # D might be int, float, Decimal -> need float for SciPy internals
+    D_int = int(D) if isinstance(D, (int, np.integer)) else int(float(D))
+    Df = float(D_int)
+
+    # M_star: could be Decimal object array -> float64 vector
+    M_star_f = np.array([float(M_star[i]) for i in range(3)], dtype=float)
+
+    # chi: could be Decimal object matrix -> float64 matrix
+    chi_f = np.array([[float(chi[i, j]) for j in range(3)] for i in range(3)], dtype=float)
+
+    # mu0: could be Decimal object vec -> float64 vector
+    if isinstance(mu0, np.ndarray) and mu0.dtype == object:
+        mu0_f = np.array([float(mu0[i]) for i in range(3)], dtype=float)
+    else:
+        mu0_f = np.array(mu0, dtype=float)
+
+    # handle "settingmu" logic (same behavior as before)
+    if settingmu == "zero":
+        mu0_f = np.zeros(3, dtype=float)
+    elif settingmu == "previous":
+        mu0_f = mu0_f
+
+    # ---- 2) Define residuals in float space (same math as your original) ----
+    def m_values_f(mu):
         mu1, mu2, mu3 = mu
 
-        den = (np.exp((2/D)*mu1)*(chi[0,0]**2)
-                + np.exp((2/D)*mu2)*(chi[1,1]**2)
-                + np.exp((2/D)*mu3)*(chi[2,2]**2)
-                + 2*(np.exp((1/D)*(mu1+mu2))*chi[0,1]*chi[1,0]
-                    + np.exp((1/D)*(mu2+mu3))*chi[1,2]*chi[2,1]
-                    + np.exp((1/D)*(mu3+mu1))*chi[2,0]*chi[0,2]
-                    )
-                )
+        den = (
+            np.exp((2.0 / Df) * mu1) * (chi_f[0, 0] ** 2)
+            + np.exp((2.0 / Df) * mu2) * (chi_f[1, 1] ** 2)
+            + np.exp((2.0 / Df) * mu3) * (chi_f[2, 2] ** 2)
+            + 2.0 * (
+                np.exp((1.0 / Df) * (mu1 + mu2)) * chi_f[0, 1] * chi_f[1, 0]
+                + np.exp((1.0 / Df) * (mu2 + mu3)) * chi_f[1, 2] * chi_f[2, 1]
+                + np.exp((1.0 / Df) * (mu3 + mu1)) * chi_f[2, 0] * chi_f[0, 2]
+            )
+        )
+
         return np.array([
-            (np.exp((2/D)*mu1)*(chi[0, 0]**2)+ np.exp((1/D)*(mu1+mu2))*(chi[0, 1]*chi[1, 0]) + np.exp((1/D)*(mu1+mu3))*(chi[0, 2]*chi[2, 0])) / den,
-            (np.exp((2/D)*mu2)*(chi[1, 1]**2)+ np.exp((1/D)*(mu2+mu1))*(chi[1, 0]*chi[0, 1]) + np.exp((1/D)*(mu2+mu3))*(chi[1, 2]*chi[2, 1])) / den,
-            (np.exp((2/D)*mu3)*(chi[2, 2]**2)+ np.exp((1/D)*(mu3+mu1))*(chi[2, 0]*chi[0, 2]) + np.exp((1/D)*(mu3+mu2))*(chi[2, 1]*chi[1, 2])) / den,
+            (
+                np.exp((2.0 / Df) * mu1) * (chi_f[0, 0] ** 2)
+                + np.exp((1.0 / Df) * (mu1 + mu2)) * (chi_f[0, 1] * chi_f[1, 0])
+                + np.exp((1.0 / Df) * (mu1 + mu3)) * (chi_f[0, 2] * chi_f[2, 0])
+            ) / den,
+            (
+                np.exp((2.0 / Df) * mu2) * (chi_f[1, 1] ** 2)
+                + np.exp((1.0 / Df) * (mu2 + mu1)) * (chi_f[1, 0] * chi_f[0, 1])
+                + np.exp((1.0 / Df) * (mu2 + mu3)) * (chi_f[1, 2] * chi_f[2, 1])
+            ) / den,
+            (
+                np.exp((2.0 / Df) * mu3) * (chi_f[2, 2] ** 2)
+                + np.exp((1.0 / Df) * (mu3 + mu1)) * (chi_f[2, 0] * chi_f[0, 2])
+                + np.exp((1.0 / Df) * (mu3 + mu2)) * (chi_f[2, 1] * chi_f[1, 2])
+            ) / den,
         ], dtype=float)
-    def residuals(mu):
-        return m_values(mu) - M_star 
 
-    if settingmu=="zero":
-        mu0 = np.zeros(3)
-    elif settingmu=="previous":
-        mu0 = mu0
+    def residuals_f(mu):
+        return m_values_f(mu) - M_star_f
 
-    res = least_squares(residuals, mu0, method="trf", loss=loss, xtol=2.23e-16, ftol=1e-21, gtol=1e-21)
+    # ---- 3) Run SciPy least_squares (float) ----
+    res = least_squares(
+        residuals_f,
+        mu0_f,
+        method="trf",
+        loss=loss,
+        xtol=2.23e-16,
+        ftol=1e-21,
+        gtol=1e-21,
+    )
 
-    return -res.x  # minus sign super important !
+    mu_sol_f = -res.x  # keep your sign convention
 
-def update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss):
-    chi_new = chi.copy()
-    mu = mu0.copy()
+    # ---- 4) Convert back to Decimal output ----
+    mu_sol = np.array([Decimal(str(mu_sol_f[i])) for i in range(3)], dtype=object)
+    return mu_sol
+
+def update_chi(D: int, H: int, M, THRESHOLD, MAX_ITER, chi, damping: Decimal, mu0, settingmu, loss):
+    Dd = toD(D)
+
+    chi_new = np.empty((3, 3), dtype=object)
+    for a in range(3):
+        for b in range(3):
+            chi_new[a, b] = chi[a, b]
+
     if settingmu != "always_zero":
-        mu = find_current_mu(D, M, chi, mu, loss, settingmu)
+        mu = find_current_mu(D, M, chi, mu0, loss=loss, settingmu=settingmu)
     else:
-        mu = np.zeros(3)    
+        mu = np.array([D0, D0, D0], dtype=object)
 
-    for i in range(3):
-        for j in range(3):
-            second_term = 0
-            f1, f2, f3 = assign_f(i)
-            for r in range(H-(i==j), D):
-                for k in range(D-r):
-                    second_term += math.comb(D-1, r) * math.comb(D-1-r, k) * (chi[f1, i]**r) * (chi[f2,i]**k) * (chi[f3,i]**(D-1-r-k))
-
-            chi_new[i, j] = damping * np.exp(- (1/D)*(mu[i]+mu[j])) * second_term + (1-damping) * chi[i, j]
-
-    chi_new = normalize_chi(chi_new)
-    return chi_new, mu
-
-def compute_Z_node(D, H, chi):
-    Z_node = 0
     for i in range(3):
         f1, f2, f3 = assign_f(i)
-        for r in range(H, D+1):
-            for k in range(D-r+1):
-                Z_node += math.comb(D, r) * math.comb(D-r, k) * (chi[f1, i]**r) * (chi[f2,i]**k) * (chi[f3,i]**(D-r-k))
+        for j in range(3):
+            second_term = D0
+
+            r_start = H - (1 if i == j else 0)
+
+            for r in range(r_start, D):
+                c1 = math.comb(D - 1, r)
+                for k in range(0, D - r):
+                    c2 = math.comb(D - 1 - r, k)
+                    coeff = Decimal(c1 * c2)
+
+                    term = powD(chi[f1, i], r) * powD(chi[f2, i], k) * powD(chi[f3, i], D - 1 - r - k)
+                    second_term += coeff * term
+
+            expo = expD(-(D1 / Dd) * (mu[i] + mu[j]))
+            chi_new[i, j] = damping * expo * second_term + (D1 - damping) * chi[i, j]
+
+    chi_new = normalize_chi_decimal(chi_new)
+    return chi_new, mu
+
+def compute_Z_node(D: int, H: int, chi):
+    Z_node = D0
+    for i in range(3):
+        f1, f2, f3 = assign_f(i)
+        for r in range(H, D + 1):
+            cDr = math.comb(D, r)
+            for k in range(0, D - r + 1):
+                c = cDr * math.comb(D - r, k)
+                term = powD(chi[f1, i], r) * powD(chi[f2, i], k) * powD(chi[f3, i], D - r - k)
+                Z_node += Decimal(c) * term
     return Z_node
 
-def compute_Z_edge(D, mu, chi):
-    Z_edge = 0
+def compute_Z_edge(D: int, mu, chi):
+    Dd = toD(D)
+    Z_edge = D0
+
     for i in range(3):
-        Z_edge += np.exp((2/D)*mu[i])*(chi[i, i]**2)
-        j = (i+1)%3
-        Z_edge += 2 * np.exp((1/D)*(mu[i]+mu[j])) * chi[i, j] * chi[j, i]
+        Z_edge += expD((D2 / Dd) * mu[i]) * (chi[i, i] ** 2)
+
+        j = (i + 1) % 3
+        Z_edge += D2 * expD((D1 / Dd) * (mu[i] + mu[j])) * chi[i, j] * chi[j, i]
 
     return Z_edge
 
-def compute_phi_RS(D, Z_node, Z_edge):
-    return np.log(Z_node) - (D/2)*np.log(Z_edge)
+def compute_phi_RS(D: int, Z_node: Decimal, Z_edge: Decimal):
+    Dd = toD(D)
+    return lnD(Z_node) - (Dd / D2) * lnD(Z_edge)
 
-def compute_m_actual(D, mu, Z_edge, chi):
-    m_actual = np.zeros(3)
-    m_actual[0] = (np.exp((2/D) * mu[0]) * chi[0,0]**2 + np.exp((1/D) * (mu[0]+mu[1])) * chi[0,1]*chi[1,0] + np.exp((1/D) * (mu[0]+mu[2])) * chi[0,2]*chi[2,0]) / Z_edge
-    m_actual[1] = (np.exp((2/D) * mu[1]) * chi[1,1]**2 + np.exp((1/D) * (mu[1]+mu[0])) * chi[1,0]*chi[0,1] + np.exp((1/D) * (mu[1]+mu[2])) * chi[1,2]*chi[2,1]) / Z_edge
-    m_actual[2] = (np.exp((2/D) * mu[2]) * chi[2,2]**2 + np.exp((1/D) * (mu[2]+mu[0])) * chi[2,0]*chi[0,2] + np.exp((1/D) * (mu[2]+mu[1])) * chi[2,1]*chi[1,2]) / Z_edge
+def compute_m_actual(D: int, mu, Z_edge: Decimal, chi):
+    Dd = toD(D)
+    m_actual = np.array([D0, D0, D0], dtype=object)
+
+    m_actual[0] = (
+        expD((D2 / Dd) * mu[0]) * (chi[0, 0] ** 2)
+        + expD((D1 / Dd) * (mu[0] + mu[1])) * chi[0, 1] * chi[1, 0]
+        + expD((D1 / Dd) * (mu[0] + mu[2])) * chi[0, 2] * chi[2, 0]
+    ) / Z_edge
+
+    m_actual[1] = (
+        expD((D2 / Dd) * mu[1]) * (chi[1, 1] ** 2)
+        + expD((D1 / Dd) * (mu[1] + mu[0])) * chi[1, 0] * chi[0, 1]
+        + expD((D1 / Dd) * (mu[1] + mu[2])) * chi[1, 2] * chi[2, 1]
+    ) / Z_edge
+
+    m_actual[2] = (
+        expD((D2 / Dd) * mu[2]) * (chi[2, 2] ** 2)
+        + expD((D1 / Dd) * (mu[2] + mu[0])) * chi[2, 0] * chi[0, 2]
+        + expD((D1 / Dd) * (mu[2] + mu[1])) * chi[2, 1] * chi[1, 2]
+    ) / Z_edge
+
     return m_actual
 
-def compute_entropy(phi_RS, mu, m_actual):
-    return phi_RS + np.dot(mu, m_actual)
+def compute_entropy(phi_RS: Decimal, mu, m_actual):
+    dot = D0
+    for i in range(3):
+        dot += mu[i] * m_actual[i]
+    return phi_RS + dot
 
-def compute_quantities(D, H, chi, mu):
+def compute_quantities(D: int, H: int, chi, mu):
     Z_node = compute_Z_node(D, H, chi)
     Z_edge = compute_Z_edge(D, mu, chi)
     phi_RS = compute_phi_RS(D, Z_node, Z_edge)
@@ -113,15 +273,26 @@ def compute_quantities(D, H, chi, mu):
     s = compute_entropy(phi_RS, mu, m_actual)
     return Z_node, Z_edge, phi_RS, m_actual, s
 
-def chi_metrics(chi_new, chi_old):
-    diff = chi_new - chi_old
+def chi_metrics_decimal(chi_new, chi_old):
+    diffs = []
+    vals = []
+    for i in range(3):
+        for j in range(3):
+            d = chi_new[i, j] - chi_old[i, j]
+            diffs.append(absD(d))
+            vals.append(chi_new[i, j])
+
+    diff_max = max(diffs)
+
+    # entropy: -sum(p ln p) for p>0
+    ent = Decimal(0)
+    for p in vals:
+        if p > 0:
+            ent -= p * p.ln()
+
     return {
-        "chi_diff_max": float(np.max(np.abs(diff))),
-        "chi_diff_l2": float(np.linalg.norm(diff)),
-        "chi_diff_mean_abs": float(np.mean(np.abs(diff))),
-        "chi_min": float(np.min(chi_new)),
-        "chi_max": float(np.max(chi_new)),
-        "chi_entropy": float(-np.sum(np.where(chi_new > 0, chi_new * np.log(chi_new), 0.0))),
+        "chi_diff_max": diff_max,
+        "chi_entropy": ent,
     }
 
 def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every=1000, use_wandb=False, loss='linear'):
@@ -135,7 +306,7 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every
         chi_old = chi.copy()
         chi_new, mu = update_chi(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, loss)
         
-        metrics = chi_metrics(chi_new, chi_old)
+        metrics = chi_metrics_decimal(chi_new, chi_old)
         diff = metrics["chi_diff_max"]
         chi = chi_new.copy()
 
@@ -152,34 +323,31 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every
                 "elapsed_sec": elapsed,
                 "sec_since_last_log": step_dt,
                 **metrics,
-                "chi00": float(chi[0, 0]),
-                "chi01": float(chi[0, 1]),
-                "chi02": float(chi[0, 2]),
-                "chi10": float(chi[1, 0]),
-                "chi11": float(chi[1, 1]),
-                "chi12": float(chi[1, 2]),
-                "chi20": float(chi[2, 0]),
-                "chi21": float(chi[2, 1]),
-                "chi22": float(chi[2, 2]),
-                "mu_0": float(mu[0]),
-                "mu_1": float(mu[1]),
-                "mu_2": float(mu[2]),
-                "m_actual_0": float(m_actual_tmp[0]),
-                "m_actual_1": float(m_actual_tmp[1]),
-                "m_actual_2": float(m_actual_tmp[2]),
-                "total_m_actual": float(np.sum(m_actual_tmp)),
-                "m_err_l2": float(np.linalg.norm(m_err)),
-                "m_err_maxabs": float(np.max(np.abs(m_err))),
-                "Z_node": float(Z_node_tmp),
-                "Z_edge": float(Z_edge_tmp),
-                "phi_RS": float(phi_RS_tmp),
-                "chi": [float(chi[i, j]) for i in range(3) for j in range(3)],
-                "s": float(s_tmp),
-                "estimated_n_solutions": float(np.exp(s_tmp * N))
+                "chi00": chi[0, 0],
+                "chi01": chi[0, 1],
+                "chi02": chi[0, 2],
+                "chi10": chi[1, 0],
+                "chi11": chi[1, 1],
+                "chi12": chi[1, 2],
+                "chi20": chi[2, 0],
+                "chi21": chi[2, 1],
+                "chi22": chi[2, 2],
+                "mu_0": mu[0],
+                "mu_1": mu[1],
+                "mu_2": mu[2],
+                "m_actual_0": m_actual_tmp[0],
+                "m_actual_1": m_actual_tmp[1],
+                "m_actual_2": m_actual_tmp[2],
+                "total_m_actual": np.sum(m_actual_tmp),
+                "Z_node": Z_node_tmp,
+                "Z_edge": Z_edge_tmp,
+                "phi_RS": phi_RS_tmp,
+                "chi": [chi[i, j] for i in range(3) for j in range(3)],
+                "s": s_tmp,
             }
 
             if use_wandb and WANDB_AVAILABLE:
-                wandb.log(log_payload, step=iter)
+                wandb.log(wandb_sanitize(log_payload), step=iter)
 
         if diff < THRESHOLD:
             break
@@ -198,13 +366,13 @@ if __name__ == "__main__":
         raise ValueError("N*D must be even to construct a valid graph without self-loops or multiple edges and N must be a multiple of K.")
 
     H = 3
-    M = np.array([1/3, 1/3, 1/3])
-    THRESHOLD = 1e-21
+    M = np.array([D1/3, D1/3, D1/3], dtype=object)
+    THRESHOLD = toD("1e-21")
     MAX_ITER = 10000000
     LOG_EVERY = 1000
     N_RUNS = 1
-    DAMPING = 0.01
-    MU0 = np.zeros(3)
+    DAMPING = toD("0.01")
+    MU0 = np.array([D0, D0, D0], dtype=object)
     settingmu = "always_zero"  # can be "always_zero", "zero", "previous",
     loss_mu = "soft_l1"  # can be "linear", "soft_l1", "huber", "cauchy", "arctan"
     initialization_chi = "personalized"  # can be "uniform", "unif_diag", "one_hot", "gaussian", "one_hot_softmax"
@@ -212,7 +380,7 @@ if __name__ == "__main__":
     for _ in range(N_RUNS):
         SEED = np.random.randint(0, 1000000)
         np.random.seed(SEED)
-        epsilon = 25e-2
+        epsilon = toD("29e-2")
 
         if initialization_chi == "uniform":
             chi = np.ones((3,3), dtype=float) # dimension (K,K)
@@ -236,14 +404,21 @@ if __name__ == "__main__":
             chi[2,1] = 1e-2
             chi[2,2] = 1e-2
         elif initialization_chi == "personalized":
-            chi = np.zeros((3,3), dtype=float)
-            chi[0,0] = 1 - epsilon
-            chi[1,1] = epsilon/2
-            chi[2,2] = epsilon/2
+            chi = np.empty((3,3), dtype=object)
+            for i in range(3):
+                for j in range(3):
+                    chi[i,j] = D0
+            chi[0,0] = D1 - epsilon
+            chi[1,1] = epsilon/toD(D2)
+            chi[2,2] = epsilon/toD(D2)
+            # chi = np.zeros((3,3), dtype=float)
+            # chi[0,0] = 1 - epsilon
+            # chi[1,1] = epsilon/2
+            # chi[2,2] = epsilon/2
         else:  # "gaussian"
             chi = np.random.rand(3, 3)
 
-        chi /= chi.sum()
+        chi = normalize_chi_decimal(chi)
 
         USE_WANDB = True
 
@@ -253,7 +428,7 @@ if __name__ == "__main__":
         if USE_WANDB:
             wandb.init(
                 project="bp_fixed_point",
-                name=f"N{N}_D{D}_H{H}_seed{SEED}_{initialization_chi}_{settingmu}_{epsilon}_chi",
+                name=f"N{N}_D{D}_H{H}_seed{SEED}_{initialization_chi}_{settingmu}_{epsilon}_chi_dec",
                 group=f"FIXED_N{N}_D{D}_{settingmu}", 
                 config={
                     "N": N,
@@ -274,8 +449,8 @@ if __name__ == "__main__":
             )
 
             with open("chi_init.json", "w") as f:
-                json.dump({"chi_init": chi.tolist()}, f, indent=2)
-            wandb.save("chi_init.json")
+                json.dump({"chi_init": chi.tolist()}, f, indent=2, default=json_decimal)
+            wandb.save("chi_init.json")    
 
         chi, mu, iters, total_time, converged = run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, DAMPING, MU0, settingmu, LOG_EVERY,
             USE_WANDB, loss_mu)
@@ -301,15 +476,13 @@ if __name__ == "__main__":
                     "mu_final": mu.tolist(),
                     "m_actual": m_actual.tolist(),
                     "M_target": M.tolist(),
-                    "Z_node": float(Z_node),
-                    "Z_edge": float(Z_edge),
-                    "phi_RS": float(phi_RS),
-                    "s": float(s),
+                    "Z_node": Z_node,
+                    "Z_edge": Z_edge,
+                    "phi_RS": phi_RS,
+                    "s": s,
                     "iters": int(iters),
                     "total_time_sec": float(total_time),
                     "converged": bool(converged),
-                    # "n_solutions_est": float(n_solutions),
-                }, f, indent=2)
-
+                }, f, indent=2, default=json_decimal)
             wandb.save("final_results.json")
             wandb.finish()

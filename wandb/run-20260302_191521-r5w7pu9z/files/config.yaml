@@ -1,0 +1,74 @@
+_wandb:
+    value:
+        cli_version: 0.24.2
+        e:
+            bv6yptnszq92rvbydvyhwm79arjcoiyd:
+                codePath: bp_3_assortative.py
+                codePathLocal: bp_3_assortative.py
+                email: busatomattea@gmail.com
+                executable: /home/busato/venvs/assortative_partitions/bin/python
+                git:
+                    commit: 91dc39f2886ace16e09ca3a037d848c40c73a657
+                    remote: https://github.com/matteabusato/assortative_partitions.git
+                host: h121
+                os: Linux-5.14.0-70.30.1.el9_0.x86_64-x86_64-with-glibc2.34
+                program: /home/busato/assortative_partitions/bp_3_assortative.py
+                python: CPython 3.9.10
+                root: /home/busato/assortative_partitions
+                startedAt: "2026-03-02T18:15:21.100221Z"
+                writerId: bv6yptnszq92rvbydvyhwm79arjcoiyd
+        m: []
+        python_version: 3.9.10
+        t:
+            "3":
+                - 3
+                - 13
+                - 16
+                - 61
+            "4": 3.9.10
+            "5": 0.24.2
+            "12": 0.24.2
+            "13": linux-x86_64
+D:
+    value: 9
+H:
+    value: 3
+LOG_EVERY:
+    value: 1000
+M_target:
+    value:
+        - "0.33333333333333333333333333333333333333333333333333333333333333333333333333333333"
+        - "0.33333333333333333333333333333333333333333333333333333333333333333333333333333333"
+        - "0.33333333333333333333333333333333333333333333333333333333333333333333333333333333"
+MAX_ITER:
+    value: 10000000
+"N":
+    value: 1002
+THRESHOLD:
+    value: "1E-21"
+chi_init:
+    value:
+        - - "0.66"
+          - "0E+2"
+          - "0E+2"
+        - - "0E+2"
+          - "0.17"
+          - "0E+2"
+        - - "0E+2"
+          - "0E+2"
+          - "0.17"
+damping:
+    value: "0.01"
+initialization_chi:
+    value: personalized
+loss_mu:
+    value: soft_l1
+mu0:
+    value:
+        - "0"
+        - "0"
+        - "0"
+seed:
+    value: 339576
+settingmu:
+    value: always_zero

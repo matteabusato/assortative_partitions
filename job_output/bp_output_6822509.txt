@@ -1,0 +1,32 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/busato/.netrc.
+wandb: Currently logged in as: busatomattea (busatomattea-epfl) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run j7xxsk19
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260302_184143-j7xxsk19
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N1002_D9_H3_seed394140_personalized_always_zero_0.32_chi_dec
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/j7xxsk19
+Traceback (most recent call last):
+  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 415, in <module>
+    json.dump({"chi_init": chi.tolist()}, f, indent=2)
+  File "/usr/lib64/python3.9/json/__init__.py", line 179, in dump
+    for chunk in iterable:
+  File "/usr/lib64/python3.9/json/encoder.py", line 431, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/usr/lib64/python3.9/json/encoder.py", line 405, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib64/python3.9/json/encoder.py", line 325, in _iterencode_list
+    yield from chunks
+  File "/usr/lib64/python3.9/json/encoder.py", line 325, in _iterencode_list
+    yield from chunks
+  File "/usr/lib64/python3.9/json/encoder.py", line 438, in _iterencode
+    o = _default(o)
+  File "/usr/lib64/python3.9/json/encoder.py", line 179, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type Decimal is not JSON serializable
+[1;34mwandb[0m: 
+[1;34mwandb[0m: 🚀 View run [33mN1002_D9_H3_seed394140_personalized_always_zero_0.32_chi_dec[0m at: [34mhttps://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/j7xxsk19[0m
+[1;34mwandb[0m: Find logs at: [1;35mwandb/run-20260302_184143-j7xxsk19/logs[0m
+srun: error: h121: task 0: Exited with exit code 1
+srun: Terminating StepId=6822509.0

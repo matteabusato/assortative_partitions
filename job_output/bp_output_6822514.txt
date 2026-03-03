@@ -1,0 +1,49 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/busato/.netrc.
+wandb: Currently logged in as: busatomattea (busatomattea-epfl) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run r5w7pu9z
+wandb: Tracking run with wandb version 0.24.2
+wandb: Run data is saved locally in /home/busato/assortative_partitions/wandb/run-20260302_191521-r5w7pu9z
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run N1002_D9_H3_seed339576_personalized_always_zero_0.34_chi_dec
+wandb: ⭐️ View project at https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: 🚀 View run at https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/r5w7pu9z
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+Traceback (most recent call last):
+  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 432, in <module>
+    chi, mu, iters, total_time, converged = run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, DAMPING, MU0, settingmu, LOG_EVERY,
+  File "/home/busato/assortative_partitions/bp_3_assortative.py", line 327, in run_bp
+    wandb.log(log_payload, step=iter)
+  File "/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/wandb/sdk/wandb_run.py", line 400, in wrapper
+    return func(self, *args, **kwargs)
+  File "/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/wandb/sdk/wandb_run.py", line 458, in wrapper_fn
+    return func(self, *args, **kwargs)
+  File "/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/wandb/sdk/wandb_run.py", line 445, in wrapper
+    return func(self, *args, **kwargs)
+  File "/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/wandb/sdk/wandb_run.py", line 2042, in log
+    self._log(data=data, step=step, commit=commit)
+  File "/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/wandb/sdk/wandb_run.py", line 1753, in _log
+    self._partial_history_callback(data, step, commit)
+  File "/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/wandb/sdk/wandb_run.py", line 400, in wrapper
+    return func(self, *args, **kwargs)
+  File "/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/wandb/sdk/wandb_run.py", line 1581, in _partial_history_callback
+    self._backend.interface.publish_partial_history(
+  File "/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/wandb/sdk/interface/interface.py", line 701, in publish_partial_history
+    item.value_json = json_dumps_safer_history(v)
+  File "/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/wandb/util.py", line 871, in json_dumps_safer_history
+    return dumps(obj, cls=WandBHistoryJSONEncoder, **kwargs)
+  File "/usr/lib64/python3.9/json/__init__.py", line 234, in dumps
+    return cls(
+  File "/usr/lib64/python3.9/json/encoder.py", line 199, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+  File "/usr/lib64/python3.9/json/encoder.py", line 257, in iterencode
+    return _iterencode(o, 0)
+  File "/home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/wandb/util.py", line 834, in default
+    return json.JSONEncoder.default(self, obj)
+  File "/usr/lib64/python3.9/json/encoder.py", line 179, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type Decimal is not JSON serializable
+[1;34mwandb[0m: 
+[1;34mwandb[0m: 🚀 View run [33mN1002_D9_H3_seed339576_personalized_always_zero_0.34_chi_dec[0m at: [34mhttps://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/r5w7pu9z[0m
+[1;34mwandb[0m: Find logs at: [1;35mwandb/run-20260302_191521-r5w7pu9z/logs[0m
+srun: error: h121: task 0: Exited with exit code 1
+srun: Terminating StepId=6822514.0
