@@ -1,11 +1,12 @@
 #!/bin/bash -l
 
 #SBATCH --job-name=bp_test_run
-#SBATCH --partition=standard 
+#SBATCH --partition=gpu 
+#SBATCH --gres=gpu:1  
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=16G
+#SBATCH --mem=8G
 #SBATCH --time=24:00:00
 #SBATCH --output=job_output/bp_output_%j.txt
 #SBATCH --mail-type=END,FAIL
