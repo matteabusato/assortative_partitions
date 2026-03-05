@@ -4,3 +4,4 @@
 {"time":"2026-03-05T11:53:32.307801064+01:00","level":"INFO","msg":"stream: started","id":"edzc7xur"}
 {"time":"2026-03-05T11:53:32.307841545+01:00","level":"INFO","msg":"writer: started","stream_id":"edzc7xur"}
 {"time":"2026-03-05T11:53:32.30785304+01:00","level":"INFO","msg":"sender: started","stream_id":"edzc7xur"}
+{"time":"2026-03-05T17:32:03.329920512+01:00","level":"INFO","msg":"api: retrying HTTP error","status":502,"url":"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/edzc7xur/file_stream","body":"\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n"}
