@@ -191,6 +191,7 @@ def update_chi(D: int, H: int, M, THRESHOLD, MAX_ITER, chi, damping: Decimal, mu
         chi_new[i, f[1]] = damping * expD(-(D1 / Dd) * (mu[i] + mu[f[1]])) * second_term + (D1 - damping) * chi[i, f[1]]
         chi_new[i, f[2]] = damping * expD(-(D1 / Dd) * (mu[i] + mu[f[2]])) * second_term + (D1 - damping) * chi[i, f[2]]
 
+        r = H-1
         for k in range(0, D - H - 1):
             term = powD(chi[f[0], i], r) * powD(chi[f[1], i], k) * powD(chi[f[2], i], D - 1 - r - k)
             second_term += toD(FACTORIALS.get_factorial_chi(r,k)) * term

@@ -1,0 +1,6 @@
+{"time":"2026-03-05T06:24:50.235014765+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-03-05T06:24:50.503509427+01:00","level":"INFO","msg":"stream: created new stream","id":"pmdo986k"}
+{"time":"2026-03-05T06:24:50.503564802+01:00","level":"INFO","msg":"handler: started","stream_id":"pmdo986k"}
+{"time":"2026-03-05T06:24:50.504271287+01:00","level":"INFO","msg":"stream: started","id":"pmdo986k"}
+{"time":"2026-03-05T06:24:50.504303034+01:00","level":"INFO","msg":"writer: started","stream_id":"pmdo986k"}
+{"time":"2026-03-05T06:24:50.504330959+01:00","level":"INFO","msg":"sender: started","stream_id":"pmdo986k"}

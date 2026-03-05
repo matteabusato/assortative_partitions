@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/busato/assortative_partitions/replicate_2_assortative.py", line 321, in <module>
+    magnetizations = [np.array([toD(EPS), D1-toD(EPS)], dtype = object) for EPS in range(0.01,1, 0.1)]
+TypeError: 'float' object cannot be interpreted as an integer
+srun: error: i05: task 0: Exited with exit code 1
+srun: Terminating StepId=2802125.0

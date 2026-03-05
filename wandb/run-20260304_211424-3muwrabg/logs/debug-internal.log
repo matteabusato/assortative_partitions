@@ -1,0 +1,14 @@
+{"time":"2026-03-04T21:14:24.917438788+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-03-04T21:14:25.183936022+01:00","level":"INFO","msg":"stream: created new stream","id":"3muwrabg"}
+{"time":"2026-03-04T21:14:25.183991422+01:00","level":"INFO","msg":"handler: started","stream_id":"3muwrabg"}
+{"time":"2026-03-04T21:14:25.184522825+01:00","level":"INFO","msg":"stream: started","id":"3muwrabg"}
+{"time":"2026-03-04T21:14:25.184534372+01:00","level":"INFO","msg":"sender: started","stream_id":"3muwrabg"}
+{"time":"2026-03-04T21:14:25.184542833+01:00","level":"INFO","msg":"writer: started","stream_id":"3muwrabg"}
+{"time":"2026-03-04T22:15:56.222601498+01:00","level":"INFO","msg":"api: retrying HTTP error","status":502,"url":"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/3muwrabg/file_stream","body":"\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n"}
+{"time":"2026-03-05T05:33:30.121067612+01:00","level":"INFO","msg":"api: retrying HTTP error","status":502,"url":"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/3muwrabg/file_stream","body":"\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n"}
+{"time":"2026-03-05T06:24:49.487655041+01:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-03-05T06:24:49.788965997+01:00","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2026-03-05T06:24:49.791965665+01:00","level":"INFO","msg":"stream: closing","id":"3muwrabg"}
+{"time":"2026-03-05T06:24:49.791977522+01:00","level":"INFO","msg":"handler: closed","stream_id":"3muwrabg"}
+{"time":"2026-03-05T06:24:49.792864581+01:00","level":"INFO","msg":"sender: closed","stream_id":"3muwrabg"}
+{"time":"2026-03-05T06:24:49.792874715+01:00","level":"INFO","msg":"stream: closed","id":"3muwrabg"}

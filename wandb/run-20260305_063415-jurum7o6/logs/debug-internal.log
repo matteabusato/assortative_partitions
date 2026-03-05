@@ -1,0 +1,6 @@
+{"time":"2026-03-05T06:34:15.206381365+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-03-05T06:34:15.521413913+01:00","level":"INFO","msg":"stream: created new stream","id":"jurum7o6"}
+{"time":"2026-03-05T06:34:15.521458548+01:00","level":"INFO","msg":"handler: started","stream_id":"jurum7o6"}
+{"time":"2026-03-05T06:34:15.522265779+01:00","level":"INFO","msg":"stream: started","id":"jurum7o6"}
+{"time":"2026-03-05T06:34:15.522276442+01:00","level":"INFO","msg":"writer: started","stream_id":"jurum7o6"}
+{"time":"2026-03-05T06:34:15.522285368+01:00","level":"INFO","msg":"sender: started","stream_id":"jurum7o6"}

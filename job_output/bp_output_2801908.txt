@@ -12,3 +12,38 @@ wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save agai
   ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
 /home/busato/venvs/assortative_partitions/lib64/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py:824: UserWarning: Setting `gtol` below the machine epsilon (2.22e-16) effectively disables the corresponding termination condition.
   ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+wandb: updating run metadata
+wandb: uploading final_results.json; uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading history steps 9998-9999, summary, console lines 5-5
+wandb: 
+wandb: Run history:
+wandb: Z_edge ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb: Z_node ▁▁▁▁▁▁▁▂▂▂▂▂▃▃▃▃▃▃▃▃▃▄▄▄▄▄▅▅▅▅▆▆▆▆▆▇▇▇▇█
+wandb:  chi00 ▁▁▁▁▁▁▂▂▂▂▂▂▂▂▃▃▃▃▄▄▄▄▄▄▄▄▆▆▆▆▆▆▆▆▇▇▇▇▇█
+wandb:  chi01 ███▇▇▇▇▇▇▇▇▆▆▆▆▆▆▆▆▅▅▅▅▄▄▄▄▃▃▃▃▃▃▂▂▂▂▁▁▁
+wandb:  chi02 ██▇▇▇▇▇▆▆▆▆▆▅▅▅▄▄▄▄▄▃▃▃▃▃▃▂▂▂▂▂▂▂▂▂▂▁▁▁▁
+wandb:  chi10 █████▇▇▇▇▇▆▆▆▅▅▅▅▅▄▄▄▄▄▄▃▃▃▃▃▃▂▂▂▂▂▂▂▁▁▁
+wandb:  chi11 ▁▁▁▁▁▂▂▂▂▂▃▃▃▃▃▃▄▄▄▄▄▄▄▅▅▅▆▆▆▆▆▆▆▇▇▇▇▇▇█
+wandb:  chi12 ██▇▇▇▇▇▇▇▆▆▆▆▆▆▅▅▅▄▄▄▄▄▄▃▃▃▃▃▃▃▂▂▂▂▂▁▁▁▁
+wandb:  chi20 █████▇▇▇▇▇▆▆▅▅▅▅▄▄▄▄▄▄▄▄▄▃▃▃▃▃▂▂▂▂▂▂▂▁▁▁
+wandb:  chi21 █████▇▇▇▇▇▆▆▆▆▆▅▅▅▅▅▅▅▄▄▄▄▄▄▄▄▃▃▃▃▃▂▂▂▂▁
+wandb:    +15 ...
+wandb: 
+wandb: Run summary:
+wandb: Z_edge 0.11111
+wandb: Z_node 0.0
+wandb:  chi00 0.11112
+wandb:  chi01 0.11111
+wandb:  chi02 0.11111
+wandb:  chi10 0.11111
+wandb:  chi11 0.11112
+wandb:  chi12 0.11111
+wandb:  chi20 0.11111
+wandb:  chi21 0.11111
+wandb:    +20 ...
+wandb: 
+wandb: 🚀 View run N1002_D20_H6_seed315807_uniform_previous_0.29_chi_dec at: https://wandb.ai/busatomattea-epfl/bp_fixed_point/runs/6ilzgrvl
+wandb: ⭐️ View project at: https://wandb.ai/busatomattea-epfl/bp_fixed_point
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 2 other file(s)
+wandb: Find logs at: ./wandb/run-20260303_185500-6ilzgrvl/logs
