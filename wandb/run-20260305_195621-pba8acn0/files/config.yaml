@@ -1,0 +1,90 @@
+_wandb:
+    value:
+        cli_version: 0.24.2
+        e:
+            mtxdy1s0f4suydcadec8xtnowradtwgs:
+                apple:
+                    ecpuCores: 6
+                    gpuCores: 10
+                    memoryGb: 16
+                    name: Apple M4
+                    pcpuCores: 4
+                    ramTotalBytes: "17179869184"
+                    swapTotalBytes: "2147483648"
+                codePath: bp_3_assortative.py
+                codePathLocal: bp_3_assortative.py
+                cpu_count: 10
+                cpu_count_logical: 10
+                disk:
+                    /:
+                        total: "494384795648"
+                        used: "158749573120"
+                email: busatomattea@gmail.com
+                executable: /Users/matteabusato/Desktop/SPOC Lab/venvs/assortative_partitions/bin/python
+                git:
+                    commit: 7b7309ee8b2cee118b232c3582c821c72c9dafc0
+                    remote: https://github.com/matteabusato/assortative_partitions.git
+                host: Matteas-MacBook-Air.local
+                memory:
+                    total: "17179869184"
+                os: macOS-15.6-arm64-arm-64bit
+                program: /Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions/bp_3_assortative.py
+                python: CPython 3.9.6
+                root: /Users/matteabusato/Desktop/SPOC Lab/Disassortative Partitions/assortative_partitions
+                startedAt: "2026-03-05T18:56:21.375656Z"
+                writerId: mtxdy1s0f4suydcadec8xtnowradtwgs
+        m: []
+        python_version: 3.9.6
+        t:
+            "3":
+                - 2
+                - 3
+                - 13
+                - 16
+                - 61
+                - 62
+            "4": 3.9.6
+            "5": 0.24.2
+            "12": 0.24.2
+            "13": darwin-arm64
+D:
+    value: 10
+H:
+    value: 3
+LOG_EVERY:
+    value: 1000
+M_target:
+    value:
+        - 0.3333333333333333
+        - 0.3333333333333333
+        - 0.3333333333333333
+MAX_ITER:
+    value: 10000000
+THRESHOLD:
+    value: 1e-21
+chi_init:
+    value:
+        - - 0.1111111111111111
+          - 0.1111111111111111
+          - 0.1111111111111111
+        - - 0.1111111111111111
+          - 0.1111111111111111
+          - 0.1111111111111111
+        - - 0.1111111111111111
+          - 0.1111111111111111
+          - 0.1111111111111111
+damping:
+    value: 0.01
+initialization_chi:
+    value: uniform
+loss_mu:
+    value: soft_l1
+mu0:
+    value:
+        - 0
+        - 0
+        - 0
+seed:
+    value: 902266
+settingmu:
+    value: previous

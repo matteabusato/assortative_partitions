@@ -1,0 +1,24 @@
+{"time":"2026-03-05T21:01:21.155515+01:00","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-03-05T21:01:21.705356+01:00","level":"INFO","msg":"stream: created new stream","id":"4ll2sr7b"}
+{"time":"2026-03-05T21:01:21.705777+01:00","level":"INFO","msg":"handler: started","stream_id":"4ll2sr7b"}
+{"time":"2026-03-05T21:01:21.705955+01:00","level":"INFO","msg":"writer: started","stream_id":"4ll2sr7b"}
+{"time":"2026-03-05T21:01:21.70596+01:00","level":"INFO","msg":"stream: started","id":"4ll2sr7b"}
+{"time":"2026-03-05T21:01:21.706152+01:00","level":"INFO","msg":"sender: started","stream_id":"4ll2sr7b"}
+{"time":"2026-03-05T21:51:09.981433+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": read tcp 172.20.10.2:55377->35.186.228.49:443: read: operation timed out"}
+{"time":"2026-03-05T21:51:12.008257+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-05T21:51:16.738065+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-05T21:51:25.531596+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-05T22:06:40.58295+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-05T22:07:12.955764+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-05T22:24:10.124064+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-05T22:55:18.583247+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-05T23:11:37.749115+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-05T23:28:39.696882+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-05T23:29:39.700779+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-05T23:51:47.652722+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-05T23:52:47.655381+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-05T23:53:47.659312+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-06T00:09:59.192419+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-06T00:26:43.354207+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-06T00:37:10.264459+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2026-03-06T00:51:01.410861+01:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/busatomattea-epfl/bp_fixed_point/4ll2sr7b/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}

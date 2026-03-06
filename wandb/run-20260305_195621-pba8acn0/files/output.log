@@ -1,0 +1,6 @@
+[34m[1mwandb[0m: [33mWARNING[0m Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+/Users/matteabusato/Desktop/SPOC Lab/venvs/assortative_partitions/lib/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py:824: UserWarning: Setting `ftol` below the machine epsilon (2.22e-16) effectively disables the corresponding termination condition.
+  ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
+/Users/matteabusato/Desktop/SPOC Lab/venvs/assortative_partitions/lib/python3.9/site-packages/scipy/optimize/_lsq/least_squares.py:824: UserWarning: Setting `gtol` below the machine epsilon (2.22e-16) effectively disables the corresponding termination condition.
+  ftol, xtol, gtol = check_tolerance(ftol, xtol, gtol, method)
+[34m[1mwandb[0m: [33mWARNING[0m Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.

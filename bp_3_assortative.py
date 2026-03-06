@@ -123,8 +123,8 @@ def find_current_mu(D, M_star, chi, mu0=np.zeros(3), loss='linear', settingmu='p
         method="trf",
         loss=loss,
         xtol=2.23e-16,
-        ftol=1e-21,
-        gtol=1e-21,
+        ftol=2.23e-16,
+        gtol=2.23e-16,
     )
 
     return -res.x  # Very important!!
@@ -285,9 +285,9 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every
     return chi, mu, iter, total_time, converged
 
 if __name__ == "__main__":
-    Ds = [9]
-    Hs = [3]
-    Ms = [np.array([1/3, 1/3, 1/3])]
+    Ds = [7]
+    Hs = [1, 2, 3]
+    Ms = [np.array([1/5, 2/5, 2/5]), np.array([1/3, 1/3, 1/3]), np.array([1/6, 1/3, 1/2])]
     THRESHOLD = 1e-21
     MAX_ITER = 10000000
     LOG_EVERY = 1000
@@ -316,7 +316,8 @@ if __name__ == "__main__":
                     wandb.init(
                         project="bp_fixed_point",
                         name=f"D{D}_H{H}_{initialization_chi}_{settingmu}",
-                        group=f"FINAL_3ASS_D{D}_H{H}_{settingmu}", 
+                        group=f"FINAL_3ASS_D{D}_{settingmu}", 
+                        # group=f"TEST_D{D}_H{H}_{settingmu}", 
                         config={
                             "D": D,
                             "H": H,
