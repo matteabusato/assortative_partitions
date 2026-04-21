@@ -1,0 +1,7 @@
+# wandb data
+results_experiments/
+job_output/
+wandb/
+final_results.json
+chi_init.json
+output.png
