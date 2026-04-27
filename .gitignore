@@ -5,3 +5,5 @@ wandb/
 final_results.json
 chi_init.json
 output.png
+__pycache__/
+results/

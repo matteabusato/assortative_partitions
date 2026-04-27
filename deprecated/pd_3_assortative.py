@@ -4,9 +4,15 @@ import math
 import os
 import json
 import csv
-import ast
+import time
 from scipy import optimize
 from scipy.optimize import least_squares
+
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
 
 
 def assign_f(i):
@@ -121,6 +127,13 @@ class population_dynamics_3ass:
         sampling_interval=50,
         m_parisi_list=None,
         seed=None,
+        use_wandb=False,
+        wandb_project='pop_dyn_3ass',
+        wandb_group=None,
+        wandb_name=None,
+        wandb_config_extra=None,
+        log_every=100,
+        log_histograms_every=1000,
     ):
         self.d = d
         self.H = H
@@ -144,6 +157,19 @@ class population_dynamics_3ass:
         self.m_parisi_list = (np.linspace(1e-5, 1, 30) if m_parisi_list is None
                               else np.asarray(m_parisi_list))
         self.seed = seed
+
+        self.use_wandb = use_wandb
+        self.wandb_project = wandb_project
+        self.wandb_group = wandb_group
+        self.wandb_name = wandb_name
+        self.wandb_config_extra = wandb_config_extra or {}
+        self.log_every = log_every
+        self.log_histograms_every = log_histograms_every
+        self._wandb_run = None
+        self._global_step = 0
+
+        if self.use_wandb and not WANDB_AVAILABLE:
+            raise ImportError("wandb is not installed. Run `pip install wandb`.")
 
         self.rng = np.random.default_rng(seed)
 
@@ -186,6 +212,125 @@ class population_dynamics_3ass:
         if self.phi_s is not None:
             s += f"  φ_s = {self.phi_s}, φ_d = {self.phi_d}\n"
         return s
+
+
+    def _wandb_config(self):
+        cfg = {
+            'd': self.d, 'H': self.H,
+            'm_parisi': float(self.m_parisi),
+            'mu_init': self.mu.tolist(),
+            'm_target': None if self.m_target is None else self.m_target.tolist(),
+            'M': self.M, 'num_samples': self.num_samples,
+            'damping': self.damping,
+            'init_type': self.init_type,
+            'init_noise': self.init_noise,
+            'mu_update': self.mu_update,
+            'mu_solver_loss': self.mu_solver_loss,
+            'impose_symmetry': self.impose_symmetry,
+            'max_iter': self.max_iter, 'tol': self.tol,
+            'convergence_check_interval': self.convergence_check_interval,
+            'sampling_threshold': self.sampling_threshold,
+            'sampling_interval': self.sampling_interval,
+            'm_parisi_list': self.m_parisi_list.tolist(),
+            'seed': self.seed,
+            'log_every': self.log_every,
+            'log_histograms_every': self.log_histograms_every,
+        }
+        cfg.update(self.wandb_config_extra)
+        return cfg
+
+    def wandb_init(self, name=None, group=None, config_extra=None, reinit=False):
+        if not self.use_wandb:
+            return None
+        cfg = self._wandb_config()
+        if config_extra:
+            cfg.update(config_extra)
+        self._wandb_run = wandb.init(
+            project=self.wandb_project,
+            name=name or self.wandb_name or f"d{self.d}_H{self.H}_m{self.m_parisi:.3f}",
+            group=group or self.wandb_group,
+            config=cfg,
+            reinit=reinit,
+        )
+        return self._wandb_run
+
+    def wandb_finish(self):
+        if self._wandb_run is not None:
+            wandb.finish()
+            self._wandb_run = None
+
+    def _wandb_log(self, payload, step=None, commit=True):
+        if self._wandb_run is None:
+            return
+        wandb.log(payload, step=step, commit=commit)
+
+    def _log_step_metrics(self, it, t_elapsed, diff_val=None,
+                          include_observables=False, include_histograms=False):
+        if self._wandb_run is None:
+            return
+
+        chi_mean = self.population.mean(axis=0)
+        chi_std = self.population.std(axis=0)
+
+        payload = {
+            'iter': it,
+            'global_step': self._global_step,
+            'elapsed_sec': t_elapsed,
+            'no_update': int(self.no_update),
+            'm_parisi': float(self.m_parisi),
+        }
+
+        for a in range(3):
+            payload[f'mu_{a}'] = float(self.mu[a])
+
+        for i in range(3):
+            for j in range(3):
+                payload[f'chi_mean_{i}{j}'] = float(chi_mean[i, j])
+                payload[f'chi_std_{i}{j}'] = float(chi_std[i, j])
+
+        try:
+            d = self.d
+            den = 0.0
+            for a in range(3):
+                den += np.exp((2.0 / d) * self.mu[a]) * chi_mean[a, a] ** 2
+            for (a, b) in [(0, 1), (1, 2), (2, 0)]:
+                den += 2.0 * np.exp((1.0 / d) * (self.mu[a] + self.mu[b])) * chi_mean[a, b] * chi_mean[b, a]
+            if den > 0:
+                for a in range(3):
+                    num = np.exp((2.0 / d) * self.mu[a]) * chi_mean[a, a] ** 2
+                    for b in range(3):
+                        if b != a:
+                            num += np.exp((1.0 / d) * (self.mu[a] + self.mu[b])) * chi_mean[a, b] * chi_mean[b, a]
+                    payload[f'm_chi_mean_{a}'] = float(num / den)
+        except Exception:
+            pass
+
+        # hard-field fraction: messages with one entry ≈ 1
+        max_entry = self.population.max(axis=(1, 2))
+        payload['frac_hard_fields'] = float((max_entry > 0.99).mean())
+        payload['chi_max_mean'] = float(max_entry.mean())
+
+        if diff_val is not None:
+            payload['diff'] = float(diff_val)
+
+        if include_observables and self.psi is not None and not np.isnan(self.psi):
+            payload['psi'] = float(self.psi)
+            payload['phi'] = float(self.phi)
+            payload['complexity'] = float(self.complexity)
+            if self.rho is not None:
+                for a in range(3):
+                    payload[f'rho_{a}'] = float(self.rho[a])
+
+        if include_histograms:
+            for i in range(3):
+                for j in range(3):
+                    try:
+                        payload[f'hist_chi_{i}{j}'] = wandb.Histogram(
+                            self.population[:, i, j], num_bins=64)
+                    except Exception:
+                        pass
+
+        self._wandb_log(payload, step=self._global_step, commit=True)
 
 
     def _initialize_population(self):
@@ -379,7 +524,6 @@ class population_dynamics_3ass:
             rho[a_idx] = (pow_e * num / np.where(Ze > 0, Ze, 1)).mean() / Ze_mean
         self.rho = rho
 
-
     def diff(self, n_bins=200):
         total = 0.0
         for i in range(3):
@@ -394,7 +538,8 @@ class population_dynamics_3ass:
 
     def run(self, max_iter=None, tol=None, check_convergence=True,
             convergence_check_interval=None, sampling_threshold=None,
-            sampling_interval=None, reset_population=False, verbose=0):
+            sampling_interval=None, reset_population=False, verbose=0,
+            auto_wandb_init=True):
         if reset_population:
             self.reset_population()
         if max_iter is None: max_iter = self.max_iter
@@ -403,24 +548,53 @@ class population_dynamics_3ass:
         if sampling_threshold is None: sampling_threshold = self.sampling_threshold
         if sampling_interval is None: sampling_interval = self.sampling_interval
 
+        if self.use_wandb and auto_wandb_init and self._wandb_run is None:
+            self.wandb_init()
+
         psi_l, phi_l, sigma_l, rho_l = [], [], [], []
+        t0 = time.time()
+        final_diff = None
+        converged = False
+        it = 0
 
         for it in range(max_iter):
             self.step()
+            self._global_step += 1
+
+            diff_val = None
             if check_convergence and it % convergence_check_interval == 0 and it > 0:
-                d = self.diff()
+                diff_val = self.diff()
+                final_diff = diff_val
                 if verbose >= 2:
-                    print(f"  iter {it}: diff = {d:.4f}")
-                if d < tol:
+                    print(f"  iter {it}: diff = {diff_val:.4f}")
+                if diff_val < tol:
                     if verbose >= 1:
-                        print(f"Converged at iter {it} (diff={d:.4f} < tol={tol})")
-                    break
+                        print(f"Converged at iter {it} (diff={diff_val:.4f} < tol={tol})")
+                    converged = True
+
+            sampled_now = False
             if it >= sampling_threshold and it % sampling_interval == 0:
                 self.update_observables()
                 psi_l.append(self.psi)
                 phi_l.append(self.phi)
                 sigma_l.append(self.complexity)
                 rho_l.append(self.rho)
+                sampled_now = True
+
+            if self._wandb_run is not None:
+                should_log = (it % self.log_every == 0) or sampled_now or (diff_val is not None)
+                should_log_hist = (it % self.log_histograms_every == 0)
+                if should_log or should_log_hist:
+                    self._log_step_metrics(
+                        it=it,
+                        t_elapsed=time.time() - t0,
+                        diff_val=diff_val,
+                        include_observables=sampled_now,
+                        include_histograms=should_log_hist,
+                    )
+
+            if converged:
+                break
 
         self.update_observables()
         psi_l.append(self.psi)
@@ -444,9 +618,27 @@ class population_dynamics_3ass:
             print(f"Final: Ψ={self.psi_mean:.5f}, φ={self.phi_mean:.5f}, "
                   f"Σ={self.complexity_mean:.5f}, ρ={self.rho_mean}")
 
+        # wandb summary
+        if self._wandb_run is not None:
+            wandb.summary['converged'] = bool(converged)
+            wandb.summary['final_diff'] = (float(final_diff)
+                                           if final_diff is not None else None)
+            wandb.summary['total_iters'] = int(it + 1)
+            wandb.summary['total_time_sec'] = float(time.time() - t0)
+            wandb.summary['psi_mean'] = float(self.psi_mean)
+            wandb.summary['psi_std'] = float(self.psi_std)
+            wandb.summary['phi_mean'] = float(self.phi_mean)
+            wandb.summary['phi_std'] = float(self.phi_std)
+            wandb.summary['complexity_mean'] = float(self.complexity_mean)
+            wandb.summary['complexity_std'] = float(self.complexity_std)
+            for a in range(3):
+                wandb.summary[f'rho_mean_{a}'] = float(self.rho_mean[a])
+                wandb.summary[f'rho_std_{a}'] = float(self.rho_std[a])
+                wandb.summary[f'mu_final_{a}'] = float(self.mu[a])
+
 
     def compute_complexity_curves(self, m_parisi_list=None, check_convergence=False,
-                                  verbose=0):
+                                  verbose=0, one_wandb_run_per_m=False):
         if m_parisi_list is not None:
             self.m_parisi_list = np.asarray(m_parisi_list)
         n = len(self.m_parisi_list)
@@ -459,12 +651,29 @@ class population_dynamics_3ass:
         self.rho_list = np.zeros((n, 3))
         self.rho_list_std = np.zeros((n, 3))
 
+        sweep_run = None
+        if self.use_wandb and not one_wandb_run_per_m:
+            sweep_run = self.wandb_init(
+                name=(self.wandb_name or f"sweep_d{self.d}_H{self.H}"),
+                group=self.wandb_group or f"sweep_d{self.d}_H{self.H}",
+            )
+
         for i, mp in enumerate(self.m_parisi_list):
             if verbose >= 1:
                 print(f"========= m_parisi = {mp} =========")
             self.m_parisi = mp
+
+            if self.use_wandb and one_wandb_run_per_m:
+                self.wandb_init(
+                    name=f"d{self.d}_H{self.H}_m{mp:.4f}",
+                    group=self.wandb_group or f"sweep_d{self.d}_H{self.H}",
+                    reinit=True,
+                )
+
             self.run(check_convergence=check_convergence,
-                     reset_population=True, verbose=verbose)
+                     reset_population=True, verbose=verbose,
+                     auto_wandb_init=False)
+
             self.psi_list[i] = self.psi_mean
             self.psi_list_std[i] = self.psi_std
             self.phi_list[i] = self.phi_mean
@@ -474,6 +683,24 @@ class population_dynamics_3ass:
             self.rho_list[i] = self.rho_mean
             self.rho_list_std[i] = self.rho_std
 
+            if sweep_run is not None:
+                wandb.log({
+                    'sweep/m_parisi': float(mp),
+                    'sweep/psi_mean': float(self.psi_mean),
+                    'sweep/psi_std': float(self.psi_std),
+                    'sweep/phi_mean': float(self.phi_mean),
+                    'sweep/phi_std': float(self.phi_std),
+                    'sweep/complexity_mean': float(self.complexity_mean),
+                    'sweep/complexity_std': float(self.complexity_std),
+                    'sweep/rho_0_mean': float(self.rho_mean[0]),
+                    'sweep/rho_1_mean': float(self.rho_mean[1]),
+                    'sweep/rho_2_mean': float(self.rho_mean[2]),
+                }, commit=True)
+
+            if self.use_wandb and one_wandb_run_per_m:
+                self.wandb_finish()
+
+        # fit Σ(φ)
         def _fit_func(x, a, b, c, d):
             return a + b * np.power(2, x) + c * np.power(3, x)
 
@@ -497,6 +724,31 @@ class population_dynamics_3ass:
                 if verbose >= 1:
                     print(f"Fit failed: {e}")
                 self.phi_s = self.phi_d = None
+
+        if sweep_run is not None:
+            if self.phi_s is not None:
+                wandb.summary['phi_s'] = float(self.phi_s)
+            if self.phi_d is not None:
+                wandb.summary['phi_d'] = float(self.phi_d)
+            try:
+                table = wandb.Table(
+                    columns=['m_parisi', 'phi', 'phi_std', 'sigma', 'sigma_std', 'psi'],
+                    data=[[float(self.m_parisi_list[i]),
+                           float(self.phi_list[i]), float(self.phi_list_std[i]),
+                           float(self.complexity_list[i]), float(self.complexity_list_std[i]),
+                           float(self.psi_list[i])] for i in range(n)]
+                )
+                wandb.log({
+                    'complexity_curve': wandb.plot.line(
+                        table, x='phi', y='sigma', title='Σ vs φ'),
+                    'sigma_vs_m': wandb.plot.line(
+                        table, x='m_parisi', y='sigma', title='Σ vs m_parisi'),
+                    'phi_vs_m': wandb.plot.line(
+                        table, x='m_parisi', y='phi', title='φ vs m_parisi'),
+                })
+            except Exception:
+                pass
+            self.wandb_finish()
 
 
     def draw_sigma_phi(self, errorbars=False, title=None):
@@ -532,10 +784,9 @@ class population_dynamics_3ass:
                 axes[i, j].set_xlabel(rf'$\chi_{{e_{i+1}, e_{j+1}}}$')
         plt.tight_layout()
         return fig
-    
 
     def _default_folder(self):
-        return f"results/3ass_d{self.d}_H{self.H}/m_parisi={self.m_parisi}"
+        return f"results_experiments/3ass_popdynamics/d{self.d}_H{self.H}m_parisi={self.m_parisi}"
 
     def save_parameters(self, path):
         params = {
@@ -634,6 +885,26 @@ if __name__ == '__main__':
         sampling_threshold=200,
         sampling_interval=20,
         seed=0,
+        use_wandb=False,
     )
     pd.run(verbose=1)
+    pd.compute_complexity_curves(verbose=1)
+    pd.save()  
     print(pd)
+
+    # pd_wandb = population_dynamics_3ass(
+    #     d=5, H=3, m_parisi=1.0, M=5000,
+    #     m_target=np.array([1/3, 1/3, 1/3]), mu_update='target_m',
+    #     init_type='almost_unif',
+    #     max_iter=2000, tol=5.0,
+    #     sampling_threshold=500, sampling_interval=50,
+    #     seed=0,
+    #     use_wandb=True,
+    #     wandb_project='pop_dyn_3ass',
+    #     wandb_group='d5_H3_sweep',
+    #     wandb_name='balanced_m1',
+    #     log_every=50,
+    #     log_histograms_every=500,
+    # )
+    # pd_wandb.run(verbose=1)
+    # pd_wandb.wandb_finish()
