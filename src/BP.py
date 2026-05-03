@@ -226,7 +226,9 @@ def initialize_chi(K: int, init_type: str, epsilon: float = 0.5,
     elif init_type == 'gaussian':
         chi = rng.random((K, K)) + 1.0
     elif init_type == 'almost_unif':
-        chi = np.ones((K, K)) + rng.standard_normal((K, K)) / 100.0
+        chi = np.ones((K, K)) + np.random.randn(K,K)  / 1.0
+    elif init_type == 'almost_unif_std2':
+        chi = np.ones((K, K)) + rng.standard_normal((K, K)) / 2.0
     else:
         raise ValueError(f"Unknown init_type: {init_type}")
     return normalize_chi(chi)
@@ -236,28 +238,27 @@ def initialize_chi(K: int, init_type: str, epsilon: float = 0.5,
 # Mu solver
 # =============================================================================
 
-def _density_from_chi_mu(K: int, d: int, mu: np.ndarray,
-                         chi: np.ndarray) -> Tuple[np.ndarray, float]:
-    log_chi = np.where(chi > 0, np.log(np.maximum(chi, 1e-300)), -np.inf)
-    log_W = np.empty((K, K))
+def _density_from_chi_mu(K: int, d: int, mu: np.ndarray, chi: np.ndarray) -> Tuple[np.ndarray, float]:
+    W = np.empty((K, K), dtype=float)
+
     for a in range(K):
         for b in range(K):
             if a == b:
-                log_W[a, b] = (2.0 / d) * mu[a] + 2.0 * log_chi[a, a]
+                W[a, b] = (
+                    np.exp((2.0 / d) * mu[a])
+                    * (chi[a, a] ** 2)
+                )
             else:
-                log_W[a, b] = (mu[a] + mu[b]) / d + log_chi[a, b] + log_chi[b, a]
+                W[a, b] = (
+                    np.exp((1.0 / d) * (mu[a] + mu[b]))
+                    * chi[a, b]
+                    * chi[b, a]
+                )
 
-    finite = np.isfinite(log_W)
-    if not finite.any():
-        return np.full(K, 1.0 / K), 0.0
-    log_max = log_W[finite].max()
-    W = np.where(finite, np.exp(log_W - log_max), 0.0)
-    Ze_shifted = W.sum()
-    if Ze_shifted <= 0:
-        return np.full(K, 1.0 / K), 0.0
-    m = W.sum(axis=1) / Ze_shifted
-    Ze = float(Ze_shifted * np.exp(log_max))
-    return m, Ze
+    Ze = W.sum()
+    m = W.sum(axis=1) / Ze
+
+    return m, float(Ze)
 
 
 def find_current_mu(K: int, d: int, m_target: np.ndarray, chi: np.ndarray,
@@ -279,6 +280,7 @@ def find_current_mu(K: int, d: int, m_target: np.ndarray, chi: np.ndarray,
     mu = -res.x  # important: - sign!
     mu = mu - mu.mean()  # remove the gauge mode: sum(mu) = 0
     return mu   
+    # return -res.x
 
 
 # =============================================================================
@@ -433,8 +435,12 @@ class BeliefPropagation:
             np.random.seed(config.seed)
 
         self.chi = initialize_chi(
-            K=config.K, init_type=config.init_type, epsilon=config.epsilon,
-            manual_chi=config.init_chi, rng=self.rng,
+            K=config.K,
+            init_type=config.init_type,
+            epsilon=config.epsilon,
+            manual_chi=config.init_chi,
+            from_folder=config.init_from_folder,
+            rng=self.rng,
         )
         self.mu = np.zeros(config.K)
         self._wandb_run = None
@@ -631,72 +637,81 @@ def run_bp(config: BPConfig, verbose: int = 0) -> BPResult:
 
 
 if __name__ == '__main__':
-    # cfg = BPConfig(
-    #     K=3, d=7, H=4,
-    #     problem_type='assortative',
-    #     m_target=np.array([1/3, 1/3, 1/3]),
-    #     max_iter=10_000_000,
-    #     threshold=1e-15,
-    #     damping=0.01,
-    #     init_type='almost_unif',
-    #     mu_mode='always_zero',
-    #     seed=42,
-    #     log_every=1000,
-    #     use_wandb=True,             # set True once you've done `wandb login`
-    #     wandb_project='bp_fixed_point',
-    #     wandb_group='TEST1',
-    #     save_locally=True,
-    #     save_dir='../results/bp',
-    # )
-    # res = run_bp(cfg, verbose=2)
-    # print(f"\nphi_RS={res.phi_RS:.6f}, s={res.s:.6f}, m={res.m_actual}")
-
-    Ds_Hs = [(8, 1), (8, 2), (8, 3), (8, 4)]
+    problem_type = 'assortative'
+    K = 3
+    Ds = [6]
+    Hs = [[3]]
     N_RUNS = 1
 
-    for D, H in Ds_Hs:
-        for run_id in range(N_RUNS):
-            cfg = BPConfig(
-                K=4, d=D, H=H,
-                problem_type='assortative',
-                m_target=np.array([1/4, 1/4, 1/4, 1/4]),
-                max_iter=10_000_000,
-                threshold=1e-15,
-                damping=0.01,
-                init_type='almost_unif',
-                mu_mode='always_zero',
-                seed=run_id,
-                log_every=1000,
-                use_wandb=True,
-                wandb_project='bp_fixed_point',
-                wandb_group='TEST3',
-                wandb_name=f'ASS_D{D}_H{H}_run{run_id}',
-                save_locally=True,
-                save_dir='results/bp',
-            )
-        res = run_bp(cfg, verbose=2)
+    for i, D in enumerate(Ds):
+        for H in Hs[i]:
+            for run_id in range(N_RUNS):
+                SEED = np.random.randint(0, 1000000)
+                np.random.seed(42)
 
-    Ds_Hs = [ (8, 4), (8, 5), (8, 6), (8, 7)]
-    N_RUNS = 1
+                cfg = BPConfig(
+                    K=K, d=D, H=H,
+                    problem_type=problem_type,
+                    m_target=np.array([1/3, 1/3, 1/3]),
+                    max_iter=10_000_000,
+                    threshold=1e-21,
+                    damping=0.01,
+                    init_type='almost_unif',
+                    mu_mode='previous',
+                    seed=42,
+                    log_every=1000,
+                    use_wandb=True,
+                    wandb_project='bp_fixed_point',
+                    wandb_group='TEST7',
+                    wandb_name=f'NEW_{problem_type[:3]}_K{K}_D{D}_H{H}_run{run_id}',
+                    save_locally=True,
+                    save_dir='results/bp',
+                )
+                res = run_bp(cfg)
 
-    for D, H in Ds_Hs:
-        for run_id in range(N_RUNS):
-            cfg = BPConfig(
-                K=4, d=D, H=H,
-                problem_type='disassortative',
-                m_target=np.array([1/4, 1/4, 1/4, 1/4]),
-                max_iter=10_000_000,
-                threshold=1e-15,
-                damping=0.01,
-                init_type='almost_unif',
-                mu_mode='always_zero',
-                seed=run_id,
-                log_every=1000,
-                use_wandb=True,
-                wandb_project='bp_fixed_point',
-                wandb_group='TEST3',
-                wandb_name=f'DIS_D{D}_H{H}_run{run_id}',
-                save_locally=True,
-                save_dir='results/bp',
-            )
-        res = run_bp(cfg, verbose=2)
+
+    # problem_type = 'assortative'
+    # K = 3
+    # Ds_Hs = [(7, 4)]
+    # N_RUNS = 1
+
+    # init_chi = np.array([
+    #     [
+    #     0.12877134742085725,
+    #     0.0743163452959043,
+    #     0.0754291990954128
+    #     ],
+    #     [
+    #     0.14856003795673828,
+    #     0.16143017319274297,
+    #     0.20808688976193265
+    #     ],
+    #     [
+    #     0.0035178680540969604,
+    #     0.006689199700180021,
+    #     0.19319893952213477
+    #     ]
+    # ])
+
+    # for D, H in Ds_Hs:
+    #     for run_id in range(N_RUNS):
+    #         cfg = BPConfig(
+    #             K=K, d=D, H=H,
+    #             problem_type=problem_type,
+    #             m_target=np.array([1/K for _ in range(K)]),
+    #             max_iter=10_000_000,
+    #             threshold=1e-21,
+    #             damping=0.01,
+    #             init_type='manual',
+    #             init_chi=init_chi,
+    #             mu_mode='previous',
+    #             seed=run_id,
+    #             log_every=1000,
+    #             use_wandb=True,
+    #             wandb_project='bp_fixed_point',
+    #             wandb_group='TESTNEWCODECORRECT',
+    #             wandb_name=f'NEW_{problem_type[:3]}_K{K}_D{D}_H{H}_run{run_id}',
+    #             save_locally=True,
+    #             save_dir='results/bp',
+    #         )
+    #         res = run_bp(cfg)

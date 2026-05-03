@@ -46,6 +46,8 @@ class PopDynConfig:
     chi_RS: Optional[np.ndarray] = None         # for 'rs_perturb'/'rs_exact'
     init_population: Optional[np.ndarray] = None  # for 'manual'
 
+    manual_init_chi: Optional[np.ndarray] = None
+
     # observables:
     n_obs_samples: int = 2_000
     obs_every: int = 100 
@@ -71,7 +73,7 @@ class PopDynConfig:
                 f"got {self.problem_type}")
 
         valid_inits = {'rs_perturb', 'rs_exact', 'hard_field',
-                       'almost_unif', 'gaussian', 'manual'}
+                       'almost_unif', 'gaussian', 'manual', "mixed_alpha_hard_manual",}
         if self.init_type not in valid_inits:
             raise ValueError(
                 f"init_type must be one of {valid_inits}, got {self.init_type}")
@@ -229,6 +231,47 @@ def _initialize_population(cfg: PopDynConfig,
         a_idx = rng.integers(0, K, size=M)
         b_idx = rng.integers(0, K, size=M)
         pop[np.arange(M), a_idx, b_idx] = 1.0
+        return pop
+
+    elif cfg.init_type == "mixed_alpha_hard_manual":
+        if cfg.manual_init_chi is None:
+            raise ValueError(
+                "cfg.manual_init_chi must be provided when "
+                "init_type='manual_weighted_hard_fields'"
+            )
+
+        chi_manual = np.asarray(cfg.manual_init_chi, dtype=float)
+
+        if chi_manual.shape != (K, K):
+            raise ValueError(
+                f"manual_init_chi must have shape {(K, K)}, got {chi_manual.shape}"
+            )
+
+        if np.any(chi_manual < 0):
+            raise ValueError("manual_init_chi must have non-negative entries")
+
+        chi_sum = chi_manual.sum()
+        if chi_sum <= 0:
+            raise ValueError("manual_init_chi must have positive total mass")
+
+        # Normalize so that chi_manual defines probabilities over the K*K components
+        probs = (chi_manual / chi_sum).reshape(-1)
+
+        # Each population message is an almost-hard field:
+        # one component is 0.99, all others share 0.01
+        low_value = 0.01 / (K * K - 1)
+        high_value = 0.99
+
+        pop = np.full((M, K, K), low_value, dtype=float)
+
+        # Sample which component is dominant according to chi_manual
+        chosen_components = np.random.choice(K * K, size=M, p=probs)
+
+        a_idx = chosen_components // K
+        b_idx = chosen_components % K
+
+        pop[np.arange(M), a_idx, b_idx] = high_value
+
         return pop
 
     if cfg.init_type == 'almost_unif':
@@ -617,47 +660,161 @@ def run_pop_dyn(config: PopDynConfig, verbose: int = 0) -> PopDynResult:
 
 
 if __name__ == '__main__':
-    EXAMPLE = 'rs_stability'  # 'rs_stability', 'hard_field', 'sweep_H'
+    EXAMPLE = 'mixed_alpha_hard_manual'  # 'rs_stability', 'hard_field', 'sweep_H'
+    problem_type='assortative'
+    K=3
+    Ds=[7]
+    Hs=[[5]]
+    N_RUNS = 3
 
     if EXAMPLE == 'rs_stability':
-        bp_res = 
+        chi_RS = np.array([
+            [
+            0.16432256727043526,
+            0.08450537733530257,
+            0.08450537715893777
+            ],
+            [
+            0.08450538267110654,
+            0.16432256610802665,
+            0.08450538126375147
+            ],
+            [
+            0.08450538691667205,
+            0.08450538568568199,
+            0.16432257559008565
+            ]
+        ])
 
-        pd_cfg = PopDynConfig(
-            K=K, d=d, H=H, problem_type=problem_type,
-            mparisi=1.0,
-            M=10_000, n_iters=2_000, damping=0.0,
-            init_type='rs_perturb',
-            init_noise=1e-6,
-            chi_RS=bp_res.chi,
-            n_obs_samples=2_000, obs_every=100, log_every=100,
-            seed=42,
-            use_wandb=False,           # flip to True after `wandb login`
-            wandb_project='bp_pop_dyn',
-            wandb_group='RS_stability',
-            save_locally=True,
-            save_dir='results/pop_dyn',
-        )
-        pd_res = run_pop_dyn(pd_cfg, verbose=2)
+        SEED = np.random.randint(0, 1000000)
+        np.random.seed(SEED)
 
+        for i, D in enumerate(Ds):
+            for H in Hs[i]:
+                for id_run in range(N_RUNS):
+                    pd_cfg = PopDynConfig(
+                        K=K, d=D, H=H, problem_type=problem_type,
+                        mparisi=1.0,
+                        M=10_000, n_iters=2_000, damping=0.1,
+                        init_type='rs_perturb',
+                        init_noise=1e-6,
+                        chi_RS=chi_RS,
+                        n_obs_samples=2_000, obs_every=100, log_every=100,
+                        seed=SEED,
+                        use_wandb=True,
+                        wandb_project='bp_pop_dyn',
+                        wandb_group='RS_stability',
+                        wandb_name=f'{problem_type[:3]}_K{K}_D{D}_H{H}_run{id_run}',
+                        save_locally=True,
+                        save_dir='results/pop_dyn',
+                    )
+                    pd_res = run_pop_dyn(pd_cfg)
 
     elif EXAMPLE == 'hard_field':
-        pd_cfg = PopDynConfig(
-            K=3, d=7, H=4, problem_type='assortative',
-            mparisi=1.0,
-            M=10_000, n_iters=2_000, damping=0.0,
-            init_type='hard_field',
-            n_obs_samples=2_000, obs_every=100, log_every=100,
-            seed=0, save_locally=True, save_dir='results/pop_dyn',
-        )
-        pd_res = run_pop_dyn(pd_cfg, verbose=2)
-        print(f"\nphase={pd_res.phase}, Psi={pd_res.Psi:+.6f}, Sigma={pd_res.Sigma:+.6f}")
+        SEED = np.random.randint(0, 1000000)
+        np.random.seed(SEED)
+
+        for id_run in range(N_RUNS):
+            for i, D in enumerate(Ds):
+                for H in Hs[i]:
+                    pd_cfg = PopDynConfig(
+                        K=K, d=D, H=H, problem_type=problem_type,
+                        mparisi=1.0,
+                        M=10_000, n_iters=2_000, damping=0.1,
+                        init_type='mixed_alpha_hard_manual',
+                        n_obs_samples=2_000, obs_every=100, log_every=100,
+                        seed=SEED,
+                        use_wandb=True,
+                        wandb_project='bp_pop_dyn',
+                        wandb_group='EXAMPLE',
+                        wandb_name=f'{problem_type[:3]}_K{K}_D{D}_H{H}_run{id_run}',
+                        save_locally=True,
+                        save_dir='results/pop_dyn',
+                    )
+                    pd_res = run_pop_dyn(pd_cfg)
+
+    elif EXAMPLE == "mixed_alpha_hard_manual":
+        SEED = np.random.randint(0, 1000000)
+        np.random.seed(SEED)
+
+        # Example manual BP initialization
+        chi_manual = np.array([
+            [
+            0.14323736800931536,
+            0.5521040478197079,
+            0.1556672078604961
+            ],
+            [
+            0.0050543410095371085,
+            0.01106941923500839,
+            0.008192988688745654
+            ],
+            [
+            0.06638869314770673,
+            0.03022204190085732,
+            0.028063892328625422
+            ]
+        ], dtype=float)
+
+        # Optional but recommended: normalize it
+        chi_manual = chi_manual / chi_manual.sum()
+
+        for id_run in range(N_RUNS):
+            for i, D in enumerate(Ds):
+                for H in Hs[i]:
+                    pd_cfg = PopDynConfig(
+                        K=K,
+                        d=D,
+                        H=H,
+                        problem_type=problem_type,
+                        mparisi=1.0,
+
+                        M=10_000,
+                        n_iters=2_000,
+                        damping=0.1,
+
+                        init_type="mixed_alpha_hard_manual",
+                        manual_init_chi=chi_manual,
+
+                        n_obs_samples=2_000,
+                        obs_every=100,
+                        log_every=100,
+
+                        seed=SEED,
+
+                        use_wandb=True,
+                        wandb_project="bp_pop_dyn",
+                        wandb_group="mixed_alpha_hard_manual",
+                        wandb_name=f"{problem_type[:3]}_K{K}_D{D}_H{H}_run{id_run}",
+
+                        save_locally=True,
+                        save_dir="results/pop_dyn",
+                    )
+
+                    pd_res = run_pop_dyn(pd_cfg)
 
     elif EXAMPLE == 'sweep_H':
         K, d = 3, 7
         problem_type = 'assortative'
 
         for H in range(2, d):
-            bp_res = 
+            bp_res = np.array([
+                    [
+                    0.12877134742085725,
+                    0.0743163452959043,
+                    0.0754291990954128
+                    ],
+                    [
+                    0.14856003795673828,
+                    0.16143017319274297,
+                    0.20808688976193265
+                    ],
+                    [
+                    0.0035178680540969604,
+                    0.006689199700180021,
+                    0.19319893952213477
+                    ]
+                ])
 
             pd_cfg = PopDynConfig(
                 K=K, d=d, H=H, problem_type=problem_type,

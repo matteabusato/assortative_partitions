@@ -47,7 +47,7 @@ def normalize_chi(chi):
         chi = chi / chi_sum
     return chi
     
-def initialize_chi(initialization_chi='uniform', epsilon=0.5):
+def initialize_chi(initialization_chi='uniform', chi_init = np.ones((3,3), dtype=float), epsilon=0.5):
         chi = np.zeros((3,3), dtype=float)
         if initialization_chi == "uniform":
             chi = np.ones((3,3), dtype=float)
@@ -75,16 +75,11 @@ def initialize_chi(initialization_chi='uniform', epsilon=0.5):
         elif initialization_chi == "gaussian":
             chi = np.random.rand(3, 3) + np.ones((3, 3), dtype=float)
         elif initialization_chi == "almost_unif":
-            chi = np.ones((3,3), dtype=float)
-            chi[0,0] += np.random.randn() / 100 
-            chi[0,1] += np.random.randn() / 100 
-            chi[0,2] += np.random.randn() / 100 
-            chi[1,0] += np.random.randn() / 100 
-            chi[1,1] += np.random.randn() / 100 
-            chi[1,2] += np.random.randn() / 100 
-            chi[2,0] += np.random.randn() / 100 
-            chi[2,1] += np.random.randn() / 100 
-            chi[2,2] += np.random.randn() / 100 
+            chi = np.ones((3, 3)) + np.random.randn(3,3) / 1.0
+        elif initialization_chi == "almost_unif_std2":
+            chi = np.ones((3, 3)) + np.random.randn(3,3) / 2.0
+        elif initialization_chi == "manual":
+            chi = chi_init
 
         return normalize_chi(chi)
 
@@ -298,17 +293,18 @@ def run_bp(D, H, M, THRESHOLD, MAX_ITER, chi, damping, mu0, settingmu, log_every
 
 if __name__ == "__main__":
     THRESHOLD = 1e-21
-    MAX_ITER = 100000000
+    MAX_ITER = 10000000
     LOG_EVERY = 1000
     DAMPING = 0.01 
     MU0 = np.zeros(3)
     settingmu = "previous"  # can be "always_zero", "zero", "previous",
     loss_mu = "soft_l1"  # can be "linear", "soft_l1", "huber", "cauchy", "arctan"
-    initialization_chi = "gaussian"  # can be "uniform", "unif_diag", "one_hot", "gaussian", "one_hot_softmax"
+    initialization_chi = "almost_unif_std2"  # can be "uniform", "unif_diag", "one_hot", "gaussian", "one_hot_softmax"
     epsilon = 0.5
     SAVE_IN_CSV = False
+    init_chi = np.ones((3, 3))
 
-    experiment = "FIXEDM1_FIGURE5A_2"
+    experiment = "TEST7"
     N_RUNS = 1
 
     if experiment == "FIGURE7":
@@ -346,11 +342,6 @@ if __name__ == "__main__":
         Ds = [10]
         Hs = [[1, 2, 3, 4, 5, 6, 7, 8, 9]]
         Ms = [np.array([1/3, 1/3, 1/3], dtype=float)]
-    elif experiment == "TESTCODECORRECT":
-        Ds = [7] # figure 5 a
-        Hs = [[5]]
-        # Ms = [np.array([0.2, 0.8, 0], dtype=float), np.array([0.4, 0.6, 0], dtype=float), np.array([0.5, 0.5, 0], dtype=float)]
-        Ms = [np.array([0.5, 0.5, 0], dtype=float)]
     elif experiment == "CHECKVARIANCE":
         Ds = [7] 
         Hs = [[5, 6]]
@@ -385,6 +376,53 @@ if __name__ == "__main__":
         SAVE_IN_CSV = True
         THRESHOLD = 1e-14
         MAX_ITER = 5000000
+    elif experiment == "TESTNEWCODECORRECT":
+        Ds = [7] # figure 5 a
+        Hs = [[4]]
+        Ms = [np.array([1/3, 1/3, 1/3], dtype=float)]
+        initialization_chi = "manual"
+        settingmu = "always_zero"
+        init_chi = np.array([[
+            0.1070397779853297,
+            0.09142348779076771,
+            0.08856267665591241
+            ],
+            [
+            0.10785206952751081,
+            0.12799712165177532,
+            0.13618254984935835
+            ],
+            [
+            0.0880414359970747,
+            0.13068007070292145,
+            0.1222208098393495
+            ]])
+    elif experiment == "TEST4":
+        Ds = [6]
+        Hs = [[3]]
+        Ms = [np.array([1/3, 1/3, 1/3], dtype=float)]
+        settingmu = "always_zero"
+        N_RUNS = 3
+    elif experiment == "TEST5":
+        Ds = [6]
+        Hs = [[5]]
+        Ms = [np.array([1/3, 1/3, 1/3], dtype=float)]
+        initialization_chi = "almost_unif_std2"
+        settingmu = "previous"
+    elif experiment == "TEST6":
+        Ds = [7]
+        Hs = [[1, 2, 3, 4, 5, 6]]
+        Ms = [np.array([1/3, 1/3, 1/3], dtype=float)]
+        settingmu = "previous"
+        initialization_chi = "almost_unif_std2"
+        N_RUNS = 3
+    elif experiment == "TEST7":
+        Ds = [6]
+        Hs = [[3]]
+        Ms = [np.array([1/3, 1/3, 1/3], dtype=float)]
+        settingmu = "previous"
+        initialization_chi = "almost_unif"
+        N_RUNS = 1
 
     for i, D in enumerate(Ds):
         for H in Hs[i]:
@@ -392,9 +430,9 @@ if __name__ == "__main__":
             for M in Ms:
                 for id_run in range(1, N_RUNS+1):
                     SEED = np.random.randint(0, 1000000)
-                    np.random.seed(SEED)
+                    np.random.seed(42)
 
-                    chi = initialize_chi(initialization_chi, epsilon)
+                    chi = initialize_chi(initialization_chi, init_chi, epsilon)
 
                     USE_WANDB = True
 
@@ -404,10 +442,8 @@ if __name__ == "__main__":
                     if USE_WANDB:
                         wandb.init(
                             project="bp_fixed_point",
-                            name=f"D{D}_H{H}_{initialization_chi}_{id_run}", # _F for fixed (index problem in update chi)
-                            # group=f"D{D}_{experiment}_{settingmu}", 
-                            group=f"3ASS_{experiment}", 
-                            # group=f"{experiment}_D{D}", 
+                            group=f"{experiment}",
+                            name=f'OLD_ass_K3_D{D}_H{H}_run{id_run}',
                             config={
                                 "D": D,
                                 "H": H,

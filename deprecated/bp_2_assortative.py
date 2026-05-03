@@ -16,17 +16,17 @@ class Factorial():
         self.H = H
 
         factorials = np.empty((D - H + 2,), dtype=object)
-        for i in range(D-H+2):
-            r = i+H-1
+        for i in range(D - H + 2):
+            r = i + H - 1
             factorials[i] = math.comb(D, r)
 
         self.factorials = factorials                  
 
     def get_factorial_chi(self, r):
-        return self.factorials[r-H+1] * (self.D-r) / self.D
+        return self.factorials[r - self.H + 1] * (self.D - r) / self.D
     
     def get_factorial_Z_node(self, r):
-        return self.factorials[r-H+1]
+        return self.factorials[r - self.H + 1]
 
 def assign_f(i):
     if i == 0:
