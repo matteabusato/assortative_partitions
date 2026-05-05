@@ -1,13 +1,13 @@
 #!/bin/bash -l
 
-#SBATCH --job-name=bp_test_run
+#SBATCH --job-name=pd_test_run
 #SBATCH --partition=academic
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=16G
-#SBATCH --time=48:00:00
-#SBATCH --output=job_output/bp_output_%j.txt
+#SBATCH --time=24:00:00
+#SBATCH --output=job_output/pd_output_%j.txt
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=mattea.busato@epfl.ch
 
@@ -18,4 +18,4 @@ module load python
 
 source /home/busato/venvs/assortative_partitions/bin/activate
 
-srun --cpu-bind=cores python /home/busato/assortative_partitions/src/experiments/ass_k4/BP.py
+srun --cpu-bind=cores python /home/busato/assortative_partitions/src/experiments/ass_k2/population_dynamics.py

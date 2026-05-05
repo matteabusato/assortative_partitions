@@ -37,7 +37,7 @@ class PopDynConfig:
     # algorithm
     M: int = 10_000                             # population size
     n_iters: int = 5_000                        # iterations
-    damping: float = 0.9
+    damping: float = 0.01
     seed: Optional[int] = None
 
     # initialization of the population
@@ -745,27 +745,27 @@ if __name__ == '__main__':
     elif EXAMPLE == "mixed_alpha_hard_manual":
         problem_type='assortative'
         K=3
-        Ds=[3]
-        Hs=[[1]]
+        Ds=[4]
+        Hs=[[2]]
         N_RUNS = 3
         SEED = np.random.randint(0, 1000000)
         np.random.seed(SEED)
 
         chi_manual = np.array([
             [
-            0.14227241849450892,
-            0.09553045741931275,
-            0.09553045741931279
+            0.1594858094736997,
+            0.08692376193181921,
+            0.08692376193181921
             ],
             [
-            0.09553045741946617,
-            0.14227241849453065,
-            0.09553045741946618
+            0.08692376193017955,
+            0.1594858094711706,
+            0.08692376193017955
             ],
             [
-            0.09553045741944821,
-            0.09553045741944817,
-            0.14227241849450614
+            0.08692376193002035,
+            0.08692376193002035,
+            0.15948580947109148
             ]
         ], dtype=float)
 

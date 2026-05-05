@@ -641,8 +641,8 @@ def run_bp(config: BPConfig, verbose: int = 0) -> BPResult:
 if __name__ == '__main__':
     problem_type = 'assortative'
     K = 3
-    Ds = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    Hs = [[1, 2, 3], [1, 2, 3], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6, 7], [1, 2, 3, 4, 5, 6, 7], [1, 2, 3, 4, 5, 6, 7, 8]]
+    Ds = [12]
+    Hs = [[4, 5, 6]]
     N_RUNS = 3
 
     # K = 4
@@ -671,7 +671,7 @@ if __name__ == '__main__':
                     problem_type=problem_type,
                     m_target=np.array([1.0 / K] * K),
                     max_iter=20_000_000,
-                    threshold=1e-21,
+                    threshold=1e-15,
                     damping=0.01,
                     init_type='almost_unif_std10',
                     mu_mode='previous',

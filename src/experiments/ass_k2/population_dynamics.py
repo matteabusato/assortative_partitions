@@ -37,7 +37,7 @@ class PopDynConfig:
     # algorithm
     M: int = 10_000                             # population size
     n_iters: int = 5_000                        # iterations
-    damping: float = 0.9
+    damping: float = 0.01
     seed: Optional[int] = None
 
     # initialization of the population
@@ -671,8 +671,8 @@ def run_pop_dyn(config: PopDynConfig, verbose: int = 0) -> PopDynResult:
 if __name__ == '__main__':
     EXAMPLE = 'mixed_alpha_hard_manual'  # 'rs_stability', 'hard_field', 'sweep_H'
     problem_type='assortative'
-    K=3
-    Ds=[7]
+    K=2
+    Ds=[8]
     Hs=[[5]]
     N_RUNS = 3
 
@@ -744,29 +744,22 @@ if __name__ == '__main__':
 
     elif EXAMPLE == "mixed_alpha_hard_manual":
         problem_type='assortative'
-        K=3
-        Ds=[3]
-        Hs=[[1]]
+        K=2
+        Ds=[8]
+        Hs=[[5]]
         N_RUNS = 3
         SEED = np.random.randint(0, 1000000)
         np.random.seed(SEED)
 
         chi_manual = np.array([
-            [
-            0.14227241849450892,
-            0.09553045741931275,
-            0.09553045741931279
-            ],
-            [
-            0.09553045741946617,
-            0.14227241849453065,
-            0.09553045741946618
-            ],
-            [
-            0.09553045741944821,
-            0.09553045741944817,
-            0.14227241849450614
-            ]
+        [
+        0.3233764636505374,
+        0.19690875827196433
+        ],
+        [
+        0.18513970363509225,
+        0.2945750744424062
+        ]
         ], dtype=float)
 
         chi_manual = chi_manual / chi_manual.sum()
