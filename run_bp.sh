@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --job-name=bp_test_run
+#SBATCH --job-name=bp_run
 #SBATCH --partition=academic
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -18,4 +18,4 @@ module load python
 
 source /home/busato/venvs/assortative_partitions/bin/activate
 
-srun --cpu-bind=cores python /home/busato/assortative_partitions/src/experiments/ass_k4/BP.py
+srun --cpu-bind=cores python /home/busato/assortative_partitions/src/experiments/dis_k4/BP.py

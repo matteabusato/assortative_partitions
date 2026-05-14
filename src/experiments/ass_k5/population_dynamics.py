@@ -266,8 +266,8 @@ def _initialize_population(cfg: PopDynConfig,
 
         # Each population message is an almost-hard field:
         # one component is 0.99, all others share 0.01
-        low_value = 0.01 / (K * K - 1)
-        high_value = 0.99
+        low_value = 0.005 / (K * K - 1)
+        high_value = 0.995
 
         pop = np.full((M, K, K), low_value, dtype=float)
 

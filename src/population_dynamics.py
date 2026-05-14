@@ -11,6 +11,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
+from scipy.optimize import least_squares
 
 try:
     import wandb
@@ -36,7 +37,8 @@ class PopDynConfig:
 
     # algorithm
     M: int = 10_000                             # population size
-    n_iters: int = 5_000                        # iterations
+    max_iter: int = 5_000                       # iterations
+    convergence_threshold: float = 0.0
     damping: float = 0.9
     seed: Optional[int] = None
 
@@ -45,8 +47,13 @@ class PopDynConfig:
     init_noise: float = 1e-6                    # for 'rs_perturb'
     chi_RS: Optional[np.ndarray] = None         # for 'rs_perturb'/'rs_exact'
     init_population: Optional[np.ndarray] = None  # for 'manual'
-
     manual_init_chi: Optional[np.ndarray] = None
+
+    # enforce target magnetization via mu-solver
+    enforce_magnetization: bool = False
+    mtarget: Optional[np.ndarray] = None 
+    mu_solver_n_samples: int = 1_000
+    mu_solver_every: int = 1
 
     # observables:
     n_obs_samples: int = 2_000
@@ -107,6 +114,34 @@ class PopDynConfig:
 
         if not (0.0 <= self.damping < 1.0):
             raise ValueError(f"damping must be in [0, 1), got {self.damping}")
+        
+        if self.max_iter <= 0:
+            raise ValueError(f"max_iter must be > 0, got {self.max_iter}")
+        if self.convergence_threshold < 0:
+            raise ValueError(
+                f"convergence_threshold must be >= 0, got {self.convergence_threshold}")
+        if self.convergence_threshold > 0 and not self.track_diff:
+            raise ValueError(
+                "convergence_threshold > 0 requires track_diff=True; "
+                "otherwise step() always returns 0 and the run would 'converge' at iter 0.")
+
+        if self.enforce_magnetization:
+            if self.mtarget is None:
+                self.mtarget = np.full(self.K, 1.0 / self.K, dtype=float)
+            else:
+                self.mtarget = np.asarray(self.mtarget, dtype=float)
+                if self.mtarget.shape != (self.K,):
+                    raise ValueError(
+                        f"mtarget must have shape ({self.K},), got {self.mtarget.shape}")
+                if not math.isclose(float(self.mtarget.sum()), 1.0, abs_tol=1e-6):
+                    raise ValueError(
+                        f"mtarget must sum to 1, got sum={self.mtarget.sum()}")
+                if np.any(self.mtarget < 0):
+                    raise ValueError("mtarget must be non-negative")
+            if self.mu_solver_n_samples <= 0:
+                raise ValueError("mu_solver_n_samples must be > 0")
+            if self.mu_solver_every <= 0:
+                raise ValueError("mu_solver_every must be > 0")
 
         if self.run_name is None:
             ts = time.strftime('%Y%m%d-%H%M%S')
@@ -141,6 +176,8 @@ class PopDynResult:
     iters: int
     total_time_sec: float
     history: Dict[str, List[float]]
+    converged: bool
+    final_mu: np.ndarray
 
     config: PopDynConfig
 
@@ -158,23 +195,21 @@ class PopDynResult:
             'iters': int(self.iters),
             'total_time_sec': float(self.total_time_sec),
             'history': self.history,
+            'converged': bool(self.converged),
+            'final_mu': self.final_mu.tolist(),
         }
         cfg = asdict(self.config)
-
         cfg['mu'] = self.config.mu.tolist()
-
         if self.config.chi_RS is not None:
             cfg['chi_RS'] = self.config.chi_RS.tolist()
-
         if self.config.manual_init_chi is not None:
             cfg['manual_init_chi'] = self.config.manual_init_chi.tolist()
-
+        if self.config.mtarget is not None:                     # NEW
+            cfg['mtarget'] = self.config.mtarget.tolist()
         if self.config.init_population is not None:
             cfg['init_population'] = (
                 f"<array shape {self.config.init_population.shape}, omitted>")
-
         out['config'] = cfg
-
         return out
 
 
@@ -215,6 +250,38 @@ def _normalize_population(pop: np.ndarray) -> np.ndarray:
     safe = np.where(sums > 1e-300, sums, 1.0)
     return pop / safe[:, None, None]
 
+def _compute_magnetization_from_chi(K: int, d: int, mu: np.ndarray,
+                                    chi: np.ndarray) -> np.ndarray:
+    """Edge-level magnetization on a d-regular graph."""
+    # Stabilize: shift mu by its max so the largest exponent is 0.
+    mu_shift = mu - mu.max()
+    exp_mu = np.exp((mu_shift[:, None] + mu_shift[None, :]) / d)  # (K, K)
+    W = exp_mu * chi * chi.T                                       # (K, K)
+    Z = W.sum()
+    if not np.isfinite(Z) or Z <= 0.0:
+        return np.full(K, 1.0 / K)
+    # (W[b,:].sum() + W[:,b].sum()) / (2 Z) for each b
+    return (W.sum(axis=1) + W.sum(axis=0)) / (2.0 * Z)
+
+def _solve_mu_from_chi(K: int, d: int, chi: np.ndarray,
+                      mtarget: np.ndarray,
+                      mu_init: Optional[np.ndarray] = None
+                      ) -> np.ndarray:
+    """Solve for mu in R^K such that m(mu, chi) = mtarget."""
+    if mu_init is None:
+        x0 = np.zeros(K - 1, dtype=float)
+    else:
+        # Gauge-fix the initial guess to mu[K-1] = 0
+        x0 = (np.asarray(mu_init, dtype=float)[:K - 1]
+              - float(mu_init[K - 1]))
+
+    def residual(mu_red: np.ndarray) -> np.ndarray:
+        mu_full = np.concatenate([mu_red, [0.0]])
+        m = _compute_magnetization_from_chi(K, d, mu_full, chi)
+        return m[:K - 1] - mtarget[:K - 1]
+
+    sol = least_squares(residual, x0, method='lm')
+    return np.concatenate([sol.x, [0.0]])
 
 def _initialize_population(cfg: PopDynConfig,
                            rng: np.random.Generator) -> np.ndarray:
@@ -372,20 +439,38 @@ def _Z_edge_from_pair(K: int, d: int, mu: np.ndarray,
 # =============================================================================
 
 class PopulationDynamics:
-    """Population dynamics for the 1RSB cavity equation."""
 
     def __init__(self, config: PopDynConfig):
         self.config = config
         self.rng = np.random.default_rng(config.seed)
         self.population = _initialize_population(config, self.rng)
+        self.mu = np.asarray(config.mu, dtype=float).copy()
+        self._step_count = 0
         self._wandb_run = None
+
+    # ------- magnetization solver -------
+
+    def _solve_mu(self) -> None:
+        """Update self.mu to enforce target magnetization on mean chi."""
+        cfg = self.config
+        n = min(cfg.mu_solver_n_samples, cfg.M)
+        idx = self.rng.integers(0, cfg.M, size=n)
+        chi_mean = self.population[idx].mean(axis=0)
+        s = chi_mean.sum()
+        if s > 1e-300:
+            chi_mean = chi_mean / s
+        self.mu = _solve_mu_from_chi(cfg.K, cfg.d, chi_mean,
+                                     cfg.mtarget, self.mu)
 
     # ------- one population update step -------
 
     def step(self) -> float:
-        """One population dynamics step."""
         cfg = self.config
         M, K, d = cfg.M, cfg.K, cfg.d
+
+        if cfg.enforce_magnetization and (self._step_count % cfg.mu_solver_every == 0):
+            self._solve_mu()
+
         n_new = max(1, int(np.ceil((1.0 - cfg.damping) * M)))
 
         prev_mean = self.population.mean(axis=0) if cfg.track_diff else None
@@ -396,7 +481,7 @@ class PopulationDynamics:
             idx = self.rng.integers(0, M, size=d - 1)
             parents = self.population[idx]
             chi_new, ZF = _F_update_single(
-                K, d, cfg.H, cfg.problem_type, cfg.mu, parents)
+                K, d, cfg.H, cfg.problem_type, self.mu, parents)
             candidates[s] = chi_new
             log_ZF[s] = math.log(ZF) if ZF > 1e-300 else -math.inf
 
@@ -417,6 +502,8 @@ class PopulationDynamics:
         write_idx = self.rng.integers(0, M, size=n_new)
         self.population[write_idx] = candidates[chosen]
 
+        self._step_count += 1 
+
         if prev_mean is not None:
             new_mean = self.population.mean(axis=0)
             return float(np.mean(np.abs(new_mean - prev_mean)))
@@ -434,13 +521,14 @@ class PopulationDynamics:
         for s in range(n):
             idx = self.rng.integers(0, M, size=d)
             Zn = _Z_node_from_d_parents(
-                K, d, cfg.H, cfg.problem_type, cfg.mu, self.population[idx])
+                K, d, cfg.H, cfg.problem_type, self.mu,
+                self.population[idx])
             log_Zn[s] = math.log(Zn) if Zn > 1e-300 else -math.inf
 
         log_Ze = np.empty(n)
         for s in range(n):
             i1, i2 = self.rng.integers(0, M, size=2)
-            Ze = _Z_edge_from_pair(K, d, cfg.mu,
+            Ze = _Z_edge_from_pair(K, d, self.mu,
                                    self.population[i1], self.population[i2])
             log_Ze[s] = math.log(Ze) if Ze > 1e-300 else -math.inf
 
@@ -528,6 +616,9 @@ class PopulationDynamics:
         wandb.summary['phase'] = result.phase
         wandb.summary['iters'] = int(result.iters)
         wandb.summary['total_time_sec'] = float(result.total_time_sec)
+        wandb.summary['converged'] = bool(result.converged)
+        for a in range(self.config.K):
+            wandb.summary[f'final_mu_{a}'] = float(result.final_mu[a])
         wandb.finish()
         self._wandb_run = None
 
@@ -539,6 +630,7 @@ class PopulationDynamics:
             'iter': [], 'mean_diff': [],
             'Psi': [], 'phi_int': [], 'Sigma': [],
             'spread': [],
+            'mu': [],
         }
 
         if cfg.use_wandb:
@@ -547,11 +639,19 @@ class PopulationDynamics:
         t0 = time.time()
         last_log_t = t0
 
-        for it in range(cfg.n_iters):
+        converged = False
+        actual_iters = cfg.max_iter
+
+        for it in range(cfg.max_iter):
             mean_diff = self.step()
 
-            do_log = (it % cfg.log_every == 0) or (it == cfg.n_iters - 1)
-            do_obs = (it % cfg.obs_every == 0) or (it == cfg.n_iters - 1)
+            is_last_iter = (it == cfg.max_iter - 1)
+            just_converged = (cfg.convergence_threshold > 0
+                              and cfg.track_diff
+                              and mean_diff < cfg.convergence_threshold)
+
+            do_log = (it % cfg.log_every == 0) or is_last_iter or just_converged
+            do_obs = (it % cfg.obs_every == 0) or is_last_iter or just_converged
 
             if do_obs:
                 obs = self.estimate_observables()
@@ -562,6 +662,7 @@ class PopulationDynamics:
                 history['phi_int'].append(obs['phi_int'])
                 history['Sigma'].append(obs['Sigma'])
                 history['spread'].append(spread)
+                history['mu'].append(self.mu.tolist())
 
                 if verbose >= 2:
                     print(f"  iter {it:>6d}  diff={mean_diff:.2e}  spread={spread:.3e}  "
@@ -585,8 +686,18 @@ class PopulationDynamics:
                     for a in range(cfg.K):
                         for b in range(cfg.K):
                             payload[f'mean_chi_{a}{b}'] = float(mean_chi[a, b])
+                    for a in range(cfg.K):
+                        payload[f'mu_{a}'] = float(self.mu[a])
                     self._wandb_log_step(payload, step=it)
                     last_log_t = time.time()
+
+            if just_converged:
+                converged = True
+                actual_iters = it + 1
+                if verbose >= 1:
+                    print(f"Converged at iter {actual_iters}: "
+                          f"mean_diff={mean_diff:.2e} < {cfg.convergence_threshold:.2e}")
+                break
 
         final_obs = self.estimate_observables(
             n_samples=max(cfg.n_obs_samples, 5_000))
@@ -602,16 +713,18 @@ class PopulationDynamics:
             log_Ze_mean=final_obs['log_Ze_mean'],
             mean_chi=mean_chi, var_chi=var_chi, spread=spread,
             phase=phase,
-            iters=cfg.n_iters,
+            iters=actual_iters,
             total_time_sec=time.time() - t0,
             history=history,
+            converged=converged,
+            final_mu=self.mu.copy(),
             config=self.config,
         )
 
         if verbose >= 1:
-            print(f"Done: phase={phase}  spread={spread:.3e}  "
-                  f"Psi={result.Psi:+.6f}  phi_int={result.phi_int:+.6f}  "
-                  f"Sigma={result.Sigma:+.6f}")
+            print(f"Done: phase={phase}  converged={converged}  iters={actual_iters}  "
+                  f"spread={spread:.3e}  Psi={result.Psi:+.6f}  "
+                  f"phi_int={result.phi_int:+.6f}  Sigma={result.Sigma:+.6f}")
 
         if cfg.save_locally:
             self.save(result)
@@ -647,6 +760,9 @@ class PopulationDynamics:
                 f"<array shape {self.config.init_population.shape}, omitted>")
         if self.config.manual_init_chi is not None:
             cfg_dict['manual_init_chi'] = self.config.manual_init_chi.tolist()
+        if self.config.mtarget is not None:
+            cfg_dict['mtarget'] = self.config.mtarget.tolist()
+        cfg_dict['final_mu'] = result.final_mu.tolist()
         with open(os.path.join(folder, 'parameters.json'), 'w') as f:
             json.dump(cfg_dict, f, indent=2)
 
@@ -744,29 +860,22 @@ if __name__ == '__main__':
 
     elif EXAMPLE == "mixed_alpha_hard_manual":
         problem_type='assortative'
-        K=3
-        Ds=[3]
-        Hs=[[1]]
+        K=2
+        Ds=[10]
+        Hs=[[6]]
         N_RUNS = 3
         SEED = np.random.randint(0, 1000000)
         np.random.seed(SEED)
 
         chi_manual = np.array([
             [
-            0.14227241849450892,
-            0.09553045741931275,
-            0.09553045741931279
+            0.31377478207852794,
+            0.20244924410063775
             ],
             [
-            0.09553045741946617,
-            0.14227241849453065,
-            0.09553045741946618
+            0.1969808262739239,
+            0.28679514754691043
             ],
-            [
-            0.09553045741944821,
-            0.09553045741944817,
-            0.14227241849450614
-            ]
         ], dtype=float)
 
         chi_manual = chi_manual / chi_manual.sum()
@@ -775,33 +884,34 @@ if __name__ == '__main__':
             for i, D in enumerate(Ds):
                 for H in Hs[i]:
                     pd_cfg = PopDynConfig(
-                        K=K,
-                        d=D,
-                        H=H,
-                        problem_type=problem_type,
-                        mparisi=1.0,
+                                    K=K, d=D, H=H, problem_type=problem_type,
+                                    mparisi=1.0,
 
-                        M=10_000,
-                        n_iters=2_000,
-                        damping=0.9,
+                                    M=10_000,
+                                    max_iter=2_000,                       # was n_iters
+                                    convergence_threshold=5e-4,           # NEW
+                                    damping=0.9,
 
-                        init_type="mixed_alpha_hard_manual",
-                        manual_init_chi=chi_manual,
+                                    init_type='mixed_alpha_hard_manual',
+                                    manual_init_chi=chi_manual,
 
-                        n_obs_samples=2_000,
-                        obs_every=100,
-                        log_every=100,
+                                    enforce_magnetization=True,
+                                    mtarget=np.full(K, 1.0 / K),
+                                    mu_solver_n_samples=1_000,
+                                    mu_solver_every=1,
 
-                        seed=SEED,
+                                    n_obs_samples=2_000, obs_every=100, log_every=100,
 
-                        use_wandb=True,
-                        wandb_project="bp_pop_dyn",
-                        wandb_group="mixed_alpha_hard_manual",
-                        wandb_name=f"{problem_type[:3]}_K{K}_D{D}_H{H}_run{id_run}",
+                                    seed=SEED,
 
-                        save_locally=True,
-                        save_dir="results/pop_dyn",
-                    )
+                                    use_wandb=True,
+                                    wandb_project='bp_pop_dyn',
+                                    wandb_group='mixed_alpha_hard_manual',
+                                    wandb_name=f'{problem_type[:3]}_K{K}_D{D}_H{H}_run{id_run}',
+                                    
+                                    save_locally=True,
+                                    save_dir='results/pop_dyn',
+                                )
 
                     pd_res = run_pop_dyn(pd_cfg)
 
