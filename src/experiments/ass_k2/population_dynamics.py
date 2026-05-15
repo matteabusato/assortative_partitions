@@ -73,6 +73,7 @@ class PopDynConfig:
     log_every: int = 100
     save_locally: bool = True
     save_dir: str = 'results/pop_dyn'
+    save_population: bool = False  
     run_name: Optional[str] = None
 
     def __post_init__(self):
@@ -337,9 +338,8 @@ def _initialize_population(cfg: PopDynConfig,
 
         # Each population message is an almost-hard field:
         # one component is 0.99, all others share 0.01
-        low_value = 0.005 / (K * K - 1)
-        high_value = 0.995
-
+        low_value = 0.01 / (K * K - 1)
+        high_value = 1 - 0.01
         pop = np.full((M, K, K), low_value, dtype=float)
 
         # Sample which component is dominant according to chi_manual
@@ -853,6 +853,9 @@ class PopulationDynamics:
 
         np.save(os.path.join(folder, 'population_final.npy'), result.population)
 
+        if self.config.save_population:
+            np.save(os.path.join(folder, 'population_final.npy'), result.population)
+
         with open(os.path.join(folder, 'final_results.json'), 'w') as f:
             json.dump(result.to_dict(), f, indent=2)
 
@@ -892,10 +895,7 @@ def run_pop_dyn(config: PopDynConfig, verbose: int = 0) -> PopDynResult:
 if __name__ == '__main__':
     EXAMPLE = 'mixed_alpha_hard_manual'  # 'rs_stability', 'hard_field', 'sweep_H'
     problem_type='assortative'
-    K=3
-    Ds=[7]
-    Hs=[[5]]
-    N_RUNS = 3
+    K = 3
 
     if EXAMPLE == 'rs_stability':
         pass
@@ -905,13 +905,10 @@ if __name__ == '__main__':
         problem_type='assortative'
 
         K = 2
-        Ds = [9]
+        Ds = [8]
         Hs = [[5]]
-        N_RUNS = 3
-        # K=2
-        # Ds = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-        # Hs = [[1, 2], [1, 2, 3], [1, 2, 3, 4], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6, 7], [1, 2, 3, 4, 5, 6, 7], [1, 2, 3, 4, 5, 6, 7, 8]]
-        # N_RUNS = 1
+        N_RUNS = 1
+
         SEED = np.random.randint(0, 1000000)
         np.random.seed(SEED)
 
@@ -929,9 +926,9 @@ if __name__ == '__main__':
                                     mparisi=1.0,
 
                                     M=1_000_000,
-                                    max_iter=5_000,
-                                    convergence_threshold=1e-3,
-                                    damping=0.9,
+                                    max_iter=10_000,
+                                    convergence_threshold=1e-15,
+                                    damping=0.8,
 
                                     init_type='mixed_alpha_hard_manual',
                                     manual_init_chi=chi_manual,
@@ -941,14 +938,15 @@ if __name__ == '__main__':
                                     mu_solver_n_samples=1_000_000,
                                     mu_solver_every=1,
 
-                                    n_obs_samples=2_000, obs_every=100, log_every=100,
+                                    n_obs_samples=1_000_000, obs_every=100, log_every=100,
 
                                     seed=SEED,
 
                                     use_wandb=True,
                                     wandb_project='bp_pop_dyn',
-                                    wandb_group='mixed_alpha_hard_manual',
-                                    wandb_name=f'{problem_type[:3]}_K{K}_D{D}_H{H}_run{id_run}',
+                                    save_population=False,
+                                    wandb_group='Sweep_H',
+                                    wandb_name=f'{problem_type[:3]}_K{K}_D{D}_H{H}_run{id_run}_newtry',
                                     
                                     save_locally=True,
                                     save_dir='results/pop_dyn',
@@ -957,4 +955,58 @@ if __name__ == '__main__':
                     pd_res = run_pop_dyn(pd_cfg)
 
     elif EXAMPLE == 'sweep_H':
-        pass
+        problem_type='assortative'
+
+        K = 2
+        Ds = [8]
+        Hs = [[5]]
+        N_RUNS = 1
+
+        SEED = np.random.randint(0, 1000000)
+        np.random.seed(SEED)
+
+        Ms_parisis = np.arange(0, 1.01, 0.05)
+
+        for id_run in range(N_RUNS):
+            for i, D in enumerate(Ds):
+                for H in Hs[i]:
+                    for mparisi in Ms_parisis:
+                        json_path = Path(f"results/bp/ass_K{K}_d{D}_H{H}/final_results.json")
+
+                        with open(json_path, "r") as f:
+                            data = json.load(f)
+
+                        chi_manual = np.array(data["chi"])
+                        pd_cfg = PopDynConfig(
+                                        K=K, d=D, H=H, problem_type=problem_type,
+                                        mparisi=mparisi,
+
+                                        M=1_000_000,
+                                        max_iter=10_000,
+                                        convergence_threshold=1e-15,
+                                        damping=0.8,
+
+                                        init_type='mixed_alpha_hard_manual',
+                                        manual_init_chi=chi_manual,
+
+                                        enforce_magnetization=True,
+                                        mtarget=np.full(K, 1.0 / K),
+                                        mu_solver_n_samples=1_000_000,
+                                        mu_solver_every=1,
+
+                                        n_obs_samples=1_000_000, obs_every=100, log_every=100,
+
+                                        seed=SEED,
+
+                                        use_wandb=True,
+                                        wandb_project='bp_pop_dyn',
+                                        save_population=False,
+                                        wandb_group='Sweep_H',
+                                        wandb_name=f'{problem_type[:3]}_K{K}_D{D}_H{H}_run{id_run}_smallepsilon',
+                                        
+                                        save_locally=True,
+                                        save_dir='results/pop_dyn',
+                                    )
+
+                        pd_res = run_pop_dyn(pd_cfg)
+            

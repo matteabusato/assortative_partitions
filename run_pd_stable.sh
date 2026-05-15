@@ -18,4 +18,4 @@ module load python
 
 source /home/busato/venvs/assortative_partitions/bin/activate
 
-srun --cpu-bind=cores python /home/busato/assortative_partitions/src/experiments/ass_k2/population_dynamics.py
+srun --cpu-bind=cores python /home/busato/assortative_partitions/src/population_dynamics_stable.py

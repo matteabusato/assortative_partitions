@@ -931,8 +931,8 @@ if __name__ == '__main__':
                                     mparisi=1.0,
 
                                     M=1_000_000,
-                                    max_iter=2_000,
-                                    convergence_threshold=1e-3,
+                                    max_iter=15_000,
+                                    convergence_threshold=1e-10,
                                     damping=0.8,
 
                                     init_type='mixed_alpha_hard_manual',
@@ -961,15 +961,15 @@ if __name__ == '__main__':
     elif EXAMPLE == 'sweep_H':
         problem_type='assortative'
 
-        K = 3
-        Ds = [5]
-        Hs = [[3]]
+        K = 4
+        Ds = [11]
+        Hs = [[4]]
         N_RUNS = 1
 
         SEED = np.random.randint(0, 1000000)
         np.random.seed(SEED)
 
-        Ms_parisis = np.arange(0.1, 1.01, 0.1)
+        Ms_parisis = np.arange(0.1, 1.01, 0.05)
 
         for id_run in range(N_RUNS):
             for i, D in enumerate(Ds):
@@ -986,8 +986,8 @@ if __name__ == '__main__':
                                         mparisi=mparisi,
 
                                         M=1_000_000,
-                                        max_iter=2_000,
-                                        convergence_threshold=1e-3,
+                                        max_iter=5_000,
+                                        convergence_threshold=1e-15,
                                         damping=0.8,
 
                                         init_type='mixed_alpha_hard_manual',

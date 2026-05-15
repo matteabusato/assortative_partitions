@@ -642,7 +642,7 @@ if __name__ == '__main__':
     problem_type = 'disassortative'
     K = 4
     Ds = [12]
-    Hs = [[12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]]
+    Hs = [[3, 2, 1, 4, 5, 6, 7, 8, 9]]
     N_RUNS = 3
 
     # K = 4
