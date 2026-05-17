@@ -50,6 +50,7 @@ try:
         _logmeanexp,
         _weighted_mean_logweights,
         _normalize_population,
+        _compute_magnetization_from_chi,
         _solve_mu_from_chi,
         _initialize_population,
         _F_update_single,
@@ -64,6 +65,7 @@ except ImportError:
         _logmeanexp,
         _weighted_mean_logweights,
         _normalize_population,
+        _compute_magnetization_from_chi,
         _solve_mu_from_chi,
         _initialize_population,
         _F_update_single,
@@ -173,6 +175,15 @@ class PopDynStableConfig(PopDynConfig):
     `chi_RS`. This is what the appendix calls "initialized on
     hard-fields proportionally to the obtained message from BP".
 
+    Adds init_type='almost_hard_field_from_chi': same prescription as
+    above, but the chosen component holds `init_dominant_mass`
+    (default 0.99) and the remaining (1 - init_dominant_mass) is
+    spread uniformly over the other K*K - 1 components. Use this when
+    pure hard fields collapse the population dynamics to a measure-
+    zero fixed point that exact-zero entries cannot escape from; the
+    small slack lets the F update transport mass across components.
+    `init_dominant_mass` is configurable in (0, 1].
+
     Overridden defaults
     -------------------
     M = 100_000
@@ -198,6 +209,9 @@ class PopDynStableConfig(PopDynConfig):
     stability_check: bool = False
     stability_noise: float = 1e-4
     stability_n_iter: int = 500
+
+    # Dominant-component mass for 'almost_hard_field_from_chi'
+    init_dominant_mass: float = 0.99
 
     # Overridden defaults for the base class
     M: int = 100_000
@@ -232,6 +246,46 @@ class PopDynStableConfig(PopDynConfig):
             a_idx = components // self.K
             b_idx = components % self.K
             pop[np.arange(self.M), a_idx, b_idx] = 1.0
+            self.init_population = pop
+            self.init_type = 'manual'
+
+        # ---- Translate 'almost_hard_field_from_chi' into a 'manual' init ----
+        if self.init_type == 'almost_hard_field_from_chi':
+            chi_src = (self.manual_init_chi
+                       if self.manual_init_chi is not None
+                       else self.chi_RS)
+            if chi_src is None:
+                raise ValueError(
+                    "init_type='almost_hard_field_from_chi' requires "
+                    "manual_init_chi or chi_RS to be provided.")
+            chi_src = np.asarray(chi_src, dtype=float)
+            if chi_src.shape != (self.K, self.K):
+                raise ValueError(
+                    f"chi source must have shape ({self.K},{self.K}), "
+                    f"got {chi_src.shape}")
+            if np.any(chi_src < 0):
+                raise ValueError("chi source must be non-negative")
+            s = chi_src.sum()
+            if s <= 0:
+                raise ValueError("chi source must have positive total mass")
+            if not (0.0 < self.init_dominant_mass <= 1.0):
+                raise ValueError(
+                    f"init_dominant_mass must be in (0, 1], "
+                    f"got {self.init_dominant_mass}")
+
+            high = float(self.init_dominant_mass)
+            n_other = self.K * self.K - 1
+            low = (1.0 - high) / n_other if n_other > 0 else 0.0
+            if n_other == 0:
+                high = 1.0
+
+            probs = (chi_src / s).reshape(-1)
+            rng = np.random.default_rng(self.seed)
+            components = rng.choice(self.K * self.K, size=self.M, p=probs)
+            pop = np.full((self.M, self.K, self.K), low, dtype=float)
+            a_idx = components // self.K
+            b_idx = components % self.K
+            pop[np.arange(self.M), a_idx, b_idx] = high
             self.init_population = pop
             self.init_type = 'manual'
 
@@ -519,6 +573,34 @@ class PopulationDynamicsStable:
         var_chi = self.population.var(axis=0)
         spread = float(np.sqrt(var_chi).mean())
         return mean_chi, var_chi, spread
+
+    def magnetization(self, mean_chi: Optional[np.ndarray] = None) -> np.ndarray:
+        """Edge-level magnetization implied by the current population.
+
+        Computes m_b = (sum_a W[a,b] + sum_a W[b,a]) / (2 * sum W), with
+        W = exp((mu_a + mu_b)/d) * mean_chi^2-like terms, using the
+        helper from the base module.
+        """
+        cfg = self.config
+        if mean_chi is None:
+            mean_chi = self.population.mean(axis=0)
+        # Normalize defensively, the helper expects a stochastic matrix.
+        s = mean_chi.sum()
+        if s > 0:
+            mean_chi = mean_chi / s
+        return _compute_magnetization_from_chi(cfg.K, cfg.d, self.mu, mean_chi)
+
+    def _chi_mag_payload(self, mean_chi: np.ndarray) -> Dict[str, float]:
+        """Build a flat dict of mean_chi_ab and m_a entries for wandb."""
+        cfg = self.config
+        payload: Dict[str, float] = {}
+        for a in range(cfg.K):
+            for b in range(cfg.K):
+                payload[f'mean_chi_{a}{b}'] = float(mean_chi[a, b])
+        m = self.magnetization(mean_chi)
+        for a in range(cfg.K):
+            payload[f'mag_{a}'] = float(m[a])
+        return payload
 
     def fraction_locked(self) -> float:
         """Fraction of messages whose x- or y-marginal is a near-hard-field."""
@@ -882,13 +964,23 @@ if __name__ == '__main__':
     M = 1_000_000
     N_RUNS = 3
 
-    # Pure hard-field initialization weighted by this chi (the closest
-    # analogue to the previous 'mixed_alpha_hard_manual' init: same K x K
-    # weighting profile, but exact hard-fields instead of almost-hard ones).
+    # Almost-hard-field initialization weighted by this chi: the chosen
+    # K*K component holds `init_dominant_mass` (0.99) and the rest of
+    # the mass is spread uniformly over the other K*K - 1 components.
+    # This matches the previous 'mixed_alpha_hard_manual' init but keeps
+    # the dominant mass configurable. Pure hard fields collapse the PD
+    # to a measure-zero fixed point on this configuration, so we leave
+    # a small slack to let the F update transport mass and reveal 1RSB.
     # Replace by the actual BP fixed point for (K=2, d=8, H=5) once known.
     chi_manual = np.array([
-        [0.31377478207852794, 0.20244924410063775],
-        [0.1969808262739239,  0.28679514754691043],
+    [
+      0.4999999999972209,
+      0.4999999999937699
+    ],
+    [
+      2.673658504408601e-12,
+      6.335535705267995e-12
+    ]
     ], dtype=float)
     chi_manual = chi_manual / chi_manual.sum()
 
@@ -905,8 +997,9 @@ if __name__ == '__main__':
             damping=0.8,                          # Koller appendix D
 
             # ---- init: closest analogue to 'mixed_alpha_hard_manual' ----
-            init_type='hard_field_from_chi',
+            init_type='almost_hard_field_from_chi',
             manual_init_chi=chi_manual,
+            init_dominant_mass=0.99,
 
             # ---- enforce uniform magnetization ----
             enforce_magnetization=True,

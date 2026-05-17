@@ -894,9 +894,8 @@ def run_pop_dyn(config: PopDynConfig, verbose: int = 0) -> PopDynResult:
 
 
 if __name__ == '__main__':
-    EXAMPLE = 'sweep_H'  # 'rs_stability', 'hard_field', 'sweep_H'
+    EXAMPLE = 'mixed_alpha_hard_manual'  # 'rs_stability', 'hard_field', 'sweep_H'
     problem_type='assortative'
-    K=3
 
     if EXAMPLE == 'rs_stability':
         pass
@@ -904,22 +903,17 @@ if __name__ == '__main__':
         pass
     elif EXAMPLE == "mixed_alpha_hard_manual":
         problem_type='assortative'
-
-        K=4
-        Ds = [3]
-        Hs = [[2]]
+        K = 4
+        Ds = [12]
+        Hs = [[5]]
         N_RUNS = 3
-
-        # K=3
-        # Ds = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-        # Hs = [[1, 2], [1, 2, 3], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6]]
-        # N_RUNS = 1
-        SEED = np.random.randint(0, 1000000)
-        np.random.seed(SEED)
 
         for id_run in range(N_RUNS):
             for i, D in enumerate(Ds):
                 for H in Hs[i]:
+                    SEED = np.random.randint(0, 1000000)
+                    np.random.seed(SEED)
+
                     json_path = Path(f"results/bp/ass_K{K}_d{D}_H{H}/final_results.json")
 
                     with open(json_path, "r") as f:
@@ -932,18 +926,18 @@ if __name__ == '__main__':
 
                                     M=1_000_000,
                                     max_iter=15_000,
-                                    convergence_threshold=1e-10,
-                                    damping=0.8,
+                                    convergence_threshold=1e-15,
+                                    damping=0.9,
 
                                     init_type='mixed_alpha_hard_manual',
                                     manual_init_chi=chi_manual,
 
                                     enforce_magnetization=True,
                                     mtarget=np.full(K, 1.0 / K),
-                                    mu_solver_n_samples=100_000,
+                                    mu_solver_n_samples=1_000_000,
                                     mu_solver_every=1,
 
-                                    n_obs_samples=2_000, obs_every=100, log_every=100,
+                                    n_obs_samples=50_000, obs_every=100, log_every=100,
 
                                     seed=SEED,
 

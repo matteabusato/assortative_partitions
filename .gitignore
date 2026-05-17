@@ -7,3 +7,4 @@ chi_init.json
 output.png
 __pycache__/
 results/
+.claude/

@@ -18,4 +18,7 @@ module load python
 
 source /home/busato/venvs/assortative_partitions/bin/activate
 
-srun --cpu-bind=cores python /home/busato/assortative_partitions/src/experiments/dis_k4/BP.py
+export WANDB_DIR="${TMPDIR:-/tmp}/wandb_${SLURM_JOB_ID}"
+mkdir -p "$WANDB_DIR"
+
+srun --cpu-bind=cores python /home/busato/assortative_partitions/src/experiments/dis_k3/BP.py
