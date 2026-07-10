@@ -107,7 +107,7 @@ def run_one(cfg: dict, seed: int = 42) -> dict:
     H = cfg["H"]
     phase = cfg["phase"]
 
-    wandb_name = f"K2_d{d}_H{H}_{phase}_mparisi1_M100k_seed{seed}"
+    wandb_name = f"K2_d{d}_H{H}_{phase}_mparisi1_M1mill_seed{seed}"
 
     pd = PopDyn(
         K=2,
@@ -175,7 +175,7 @@ def main() -> None:
     rows = []
 
     for cfg in CONFIGS:
-        rows.append(run_one(cfg, seed=0))
+        rows.append(run_one(cfg, seed=42))
 
     out_csv = "results/k2_table2/summary.csv"
 
