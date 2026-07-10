@@ -1037,8 +1037,8 @@ def benchmark_paper_values() -> None:
 
 if __name__ == "__main__":
     K = 4
-    Ds = [8]
-    Hs = [[4]]
+    Ds = [12]
+    Hs = [[2]]
     mode = "assortative"
     eps=1e-3
     damping=0.85
@@ -1057,7 +1057,7 @@ if __name__ == "__main__":
                 damping=damping,
                 max_iter=max_iter,
                 tol=tol,
-                verbose=False,
+                verbose=True,
                 save_dir=save_dir,
                 log_every=5,
             )

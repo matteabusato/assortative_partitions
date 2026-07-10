@@ -36,7 +36,7 @@ class PopDynConfig:
     mu: np.ndarray = field(default_factory=lambda: np.array([]))
 
     # algorithm
-    M: int = 10_000                             # population size
+    M: int = 100_000                             # population size
     max_iter: int = 5_000                       # iterations
     convergence_threshold: float = 0.0
     damping: float = 0.9
@@ -153,18 +153,14 @@ class PopDynConfig:
 
 @dataclass
 class PopDynResult:
-    """All outputs of a population dynamics run."""
-    # final population
     population: np.ndarray
 
-    # 1RSB observables
-    Psi: float
+    psi: float
     phi_int: float
     Sigma: float
     log_Zn_mean: float
     log_Ze_mean: float
 
-    # population summary statistics
     mean_chi: np.ndarray
     var_chi: np.ndarray
     spread: float
@@ -183,7 +179,7 @@ class PopDynResult:
 
     def to_dict(self) -> Dict[str, Any]:
         out = {
-            'Psi': float(self.Psi),
+            'psi': float(self.psi),
             'phi_int': float(self.phi_int),
             'Sigma': float(self.Sigma),
             'log_Zn_mean': float(self.log_Zn_mean),
@@ -534,7 +530,7 @@ class PopulationDynamics:
 
         log_Zn_mean = _logmeanexp(m * log_Zn)
         log_Ze_mean = _logmeanexp(m * log_Ze)
-        Psi = log_Zn_mean - (d / 2.0) * log_Ze_mean
+        psi = log_Zn_mean - (d / 2.0) * log_Ze_mean
 
         finite_n = np.isfinite(log_Zn)
         finite_e = np.isfinite(log_Ze)
@@ -543,10 +539,10 @@ class PopulationDynamics:
         E_logZe = _weighted_mean_logweights(m * log_Ze[finite_e],
                                             log_Ze[finite_e])
         phi_int = E_logZn - (d / 2.0) * E_logZe
-        Sigma = Psi - m * phi_int
+        Sigma = psi - m * phi_int
 
         return {
-            'Psi': Psi,
+            'psi': psi,
             'phi_int': phi_int,
             'Sigma': Sigma,
             'log_Zn_mean': log_Zn_mean,
@@ -568,9 +564,9 @@ class PopulationDynamics:
             return 'RS'
         
         Sigma = obs['Sigma']
-        Psi = obs['Psi']
+        psi = obs['psi']
 
-        if not math.isfinite(Psi) or Psi < -10:
+        if not math.isfinite(psi) or psi < -10:
             return 'UNSAT'
 
         if Sigma > 1e-3:
@@ -609,7 +605,7 @@ class PopulationDynamics:
     def _wandb_finish(self, result: PopDynResult):
         if self._wandb_run is None:
             return
-        wandb.summary['Psi'] = float(result.Psi)
+        wandb.summary['psi'] = float(result.psi)
         wandb.summary['phi_int'] = float(result.phi_int)
         wandb.summary['Sigma'] = float(result.Sigma)
         wandb.summary['spread'] = float(result.spread)
@@ -628,7 +624,7 @@ class PopulationDynamics:
         cfg = self.config
         history = {
             'iter': [], 'mean_diff': [],
-            'Psi': [], 'phi_int': [], 'Sigma': [],
+            'psi': [], 'phi_int': [], 'Sigma': [],
             'spread': [],
             'mu': [],
         }
@@ -658,7 +654,7 @@ class PopulationDynamics:
                 _, _, spread = self.population_stats()
                 history['iter'].append(it)
                 history['mean_diff'].append(mean_diff)
-                history['Psi'].append(obs['Psi'])
+                history['psi'].append(obs['psi'])
                 history['phi_int'].append(obs['phi_int'])
                 history['Sigma'].append(obs['Sigma'])
                 history['spread'].append(spread)
@@ -666,7 +662,7 @@ class PopulationDynamics:
 
                 if verbose >= 2:
                     print(f"  iter {it:>6d}  diff={mean_diff:.2e}  spread={spread:.3e}  "
-                          f"Psi={obs['Psi']:+.5f}  phi_int={obs['phi_int']:+.5f}  "
+                          f"psi={obs['psi']:+.5f}  phi_int={obs['phi_int']:+.5f}  "
                           f"Sigma={obs['Sigma']:+.5f}")
 
                 if do_log and cfg.use_wandb:
@@ -676,7 +672,7 @@ class PopulationDynamics:
                         'sec_since_last_log': time.time() - last_log_t,
                         'mean_diff': float(mean_diff),
                         'spread': float(spread),
-                        'Psi': float(obs['Psi']),
+                        'psi': float(obs['psi']),
                         'phi_int': float(obs['phi_int']),
                         'Sigma': float(obs['Sigma']),
                         'log_Zn_mean': float(obs['log_Zn_mean']),
@@ -706,7 +702,7 @@ class PopulationDynamics:
 
         result = PopDynResult(
             population=self.population.copy(),
-            Psi=final_obs['Psi'],
+            psi=final_obs['psi'],
             phi_int=final_obs['phi_int'],
             Sigma=final_obs['Sigma'],
             log_Zn_mean=final_obs['log_Zn_mean'],
@@ -723,7 +719,7 @@ class PopulationDynamics:
 
         if verbose >= 1:
             print(f"Done: phase={phase}  converged={converged}  iters={actual_iters}  "
-                  f"spread={spread:.3e}  Psi={result.Psi:+.6f}  "
+                  f"spread={spread:.3e}  psi={result.psi:+.6f}  "
                   f"phi_int={result.phi_int:+.6f}  Sigma={result.Sigma:+.6f}")
 
         if cfg.save_locally:
