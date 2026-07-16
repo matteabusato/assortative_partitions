@@ -23,65 +23,71 @@ CONFIGS: List[Dict[str, Any]] = [
     # d = 3
     {"d": 3, "H": 1, "expected_phase": "easy_RS"},
     {"d": 3, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 3, "H": 3, "expected_phase": "easy_RS"},
 
     # d = 4
     {"d": 4, "H": 1, "expected_phase": "easy_RS"},
     {"d": 4, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 4, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 4, "H": 4, "expected_phase": "easy_RS"},
 
     # d = 5
     {"d": 5, "H": 1, "expected_phase": "easy_RS"},
     {"d": 5, "H": 2, "expected_phase": "easy_RS"},
     {"d": 5, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 5, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 5, "H": 5, "expected_phase": "easy_RS"},
 
     # d = 6
-    {"d": 6, "H": 1, "expected_phase": "easy_RS"},
     {"d": 6, "H": 2, "expected_phase": "easy_RS"},
     {"d": 6, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 6, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 6, "H": 5, "expected_phase": "easy_RS"},
+    {"d": 6, "H": 6, "expected_phase": "easy_RS"},
 
     # d = 7
-    {"d": 7, "H": 1, "expected_phase": "easy_RS"},
     {"d": 7, "H": 2, "expected_phase": "easy_RS"},
     {"d": 7, "H": 3, "expected_phase": "easy_RS"},
     {"d": 7, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 7, "H": 5, "expected_phase": "easy_RS"},
+    {"d": 7, "H": 6, "expected_phase": "easy_RS"},
+    {"d": 7, "H": 7, "expected_phase": "easy_RS"},
 
     # d = 8
-    {"d": 8, "H": 1, "expected_phase": "easy_RS"},
-    {"d": 8, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 8, "H": 2, "expected_phase": "frozen_1RSB"},
     {"d": 8, "H": 3, "expected_phase": "easy_RS"},
     {"d": 8, "H": 4, "expected_phase": "easy_RS"},
-    {"d": 8, "H": 5, "expected_phase": "frozen_1RSB"},
+    {"d": 8, "H": 5, "expected_phase": "easy_RS"},
+    {"d": 8, "H": 6, "expected_phase": "easy_RS"},
+    {"d": 8, "H": 7, "expected_phase": "easy_RS"},
 
     # d = 9
-    {"d": 9, "H": 1, "expected_phase": "easy_RS"},
-    {"d": 9, "H": 2, "expected_phase": "easy_RS"},
     {"d": 9, "H": 3, "expected_phase": "easy_RS"},
     {"d": 9, "H": 4, "expected_phase": "easy_RS"},
     {"d": 9, "H": 5, "expected_phase": "easy_RS"},
+    {"d": 9, "H": 6, "expected_phase": "easy_RS"},
+    {"d": 9, "H": 7, "expected_phase": "easy_RS"},
 
     # d = 10
-    {"d": 10, "H": 1, "expected_phase": "easy_RS"},
-    {"d": 10, "H": 2, "expected_phase": "easy_RS"},
     {"d": 10, "H": 3, "expected_phase": "easy_RS"},
     {"d": 10, "H": 4, "expected_phase": "easy_RS"},
     {"d": 10, "H": 5, "expected_phase": "easy_RS"},
-    {"d": 10, "H": 6, "expected_phase": "frozen_1RSB"},
+    {"d": 10, "H": 6, "expected_phase": "easy_RS"},
+    {"d": 10, "H": 7, "expected_phase": "easy_RS"},
 
     # d = 11
-    {"d": 11, "H": 1, "expected_phase": "easy_RS"},
-    {"d": 11, "H": 2, "expected_phase": "easy_RS"},
-    {"d": 11, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 11, "H": 3, "expected_phase": "frozen_1RSB"},
     {"d": 11, "H": 4, "expected_phase": "easy_RS"},
     {"d": 11, "H": 5, "expected_phase": "easy_RS"},
     {"d": 11, "H": 6, "expected_phase": "easy_RS"},
+    {"d": 11, "H": 7, "expected_phase": "easy_RS"},
 
     # d = 12
-    {"d": 12, "H": 1, "expected_phase": "easy_RS"},
-    {"d": 12, "H": 2, "expected_phase": "easy_RS"},
-    {"d": 12, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 12, "H": 3, "expected_phase": "frozen_1RSB"},
     {"d": 12, "H": 4, "expected_phase": "easy_RS"},
     {"d": 12, "H": 5, "expected_phase": "easy_RS"},
     {"d": 12, "H": 6, "expected_phase": "easy_RS"},
-    {"d": 12, "H": 7, "expected_phase": "frozen_1RSB"},
+    {"d": 12, "H": 7, "expected_phase": "easy_RS"},
 ]
 
 
@@ -154,12 +160,12 @@ def write_summary(summary: Dict[str, Any], output_dir: Path) -> None:
 def main() -> None:
     config_index, cfg = select_config()
 
-    K = 2
+    K = 3
     d = int(cfg["d"])
     H = int(cfg["H"])
     expected_phase = str(cfg["expected_phase"])
 
-    seed = env_int("PD_SEED", 42)
+    seed = env_int("PD_SEED", 43)
     M = env_int("PD_M", 1_000_000)
     max_iter = env_int("PD_MAX_ITER", 20_000)
     mparisi = env_float("PD_MPARISI", 1.0)
@@ -180,7 +186,7 @@ def main() -> None:
         True,
     )
 
-    diagnostic_every_raw = env_optional_int("PD_DIAGNOSTIC_EVERY")
+    diagnostic_every = env_optional_int("PD_DIAGNOSTIC_EVERY")
     diagnostic_hist_bins = env_int("PD_DIAGNOSTIC_HIST_BINS", 80)
     diagnostic_sample_size = env_int("PD_DIAGNOSTIC_SAMPLE_SIZE", 100_000)
     save_diagnostic_plots = env_bool("PD_SAVE_DIAGNOSTIC_PLOTS", False)
@@ -191,12 +197,12 @@ def main() -> None:
     output_root = Path(
         os.environ.get(
             "PD_OUTPUT_DIR",
-            str(PROJECT_ROOT / "results" / "k2_assortative_full_sweep"),
+            str(PROJECT_ROOT / "results" / "k3_disassortative_full_sweep"),
         )
     )
 
     run_name = (
-        f"K2_assortative_d{d}_H{H}_{expected_phase}"
+        f"K3_disassortative_d{d}_H{H}_{expected_phase}"
         f"_m{mparisi:g}_M{M}_seed{seed}"
     )
 
@@ -216,7 +222,7 @@ def main() -> None:
         K=K,
         d=d,
         H=H,
-        problem_type="assortative",
+        problem_type="disassortative",
         mparisi=mparisi,
         M=M,
         damping=damping,
@@ -240,13 +246,13 @@ def main() -> None:
         device="cuda" if torch.cuda.is_available() else "cpu",
         compile_core=False,
         use_wandb=use_wandb,
-        wandb_project="assortative-popdyn",
-        wandb_group="K2_assortative_full_sweep",
+        wandb_project="disassortative-popdyn",
+        wandb_group="K3_disassortative_full_sweep",
         wandb_name=run_name,
         wandb_config_extra={
             "config_index": config_index,
             "expected_phase": expected_phase,
-            "sweep_name": "K2_assortative_full_sweep",
+            "sweep_name": "K3_disassortative_full_sweep",
         },
         log_every=200,
         wandb_log_plots=True,
@@ -255,7 +261,7 @@ def main() -> None:
         save_locally=True,
         save_dir=str(output_root),
         run_name=run_name,
-        diagnostic_every=diagnostic_every_raw,
+        diagnostic_every=diagnostic_every,
         diagnostic_hist_bins=diagnostic_hist_bins,
         diagnostic_sample_size=diagnostic_sample_size,
         save_diagnostic_plots=save_diagnostic_plots,
@@ -282,7 +288,7 @@ def main() -> None:
         "K": K,
         "d": d,
         "H": H,
-        "problem_type": "assortative",
+        "problem_type": "disassortative",
         "expected_phase": expected_phase,
         "mparisi": mparisi,
         "M": M,

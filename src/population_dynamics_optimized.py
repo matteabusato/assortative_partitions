@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import json
 import os
 import time
 from typing import Any, Dict, List, Literal, Optional, Tuple
 import matplotlib.pyplot as plt
-from matplotlib.ticker import ScalarFormatter
-
 import numpy as np
 
 try:
@@ -56,6 +53,7 @@ class PopDyn:
 
         num_samples: Optional[int] = None,
         observable_upsampling_factor: int = 10,
+        observable_batch_size: int = 20_000,
         min_observable_samples: int = 20,
         sampling_start_iter: int = 8_000,
         sampling_interval: int = 50,
@@ -81,9 +79,17 @@ class PopDyn:
         wandb_name: Optional[str] = None,
         wandb_config_extra: Optional[Dict[str, Any]] = None,
         log_every: int = 50,
+        wandb_log_plots: bool = True,
+        save_final_plots: bool = True,
+        final_plot_bins: int = 100,
         save_locally: bool = True,
         save_dir: str = "results/pop_dyn",
         run_name: Optional[str] = None,
+
+        diagnostic_every: Optional[int] = None,
+        diagnostic_hist_bins: int = 80,
+        diagnostic_sample_size: int = 100_000,
+        save_diagnostic_plots: bool = True,
     ) -> None:
 
         self.K = int(K)
@@ -105,7 +111,12 @@ class PopDyn:
         self.diff_n_bins = int(diff_n_bins)
         self.eps = float(eps)
         self.dtype = np.dtype(dtype)
-        self.torch_dtype = torch.float32 if self.dtype == np.dtype(np.float32) else torch.float64
+        self.torch_dtype = (
+            torch.float32
+            if self.dtype == np.dtype(np.float32)
+            else torch.float64
+        )
+        self.torch_eps = max(self.eps, float(torch.finfo(self.torch_dtype).tiny))
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = torch.device(device)
@@ -122,6 +133,12 @@ class PopDyn:
 
         self.num_samples = None if num_samples is None else int(num_samples)
         self.observable_upsampling_factor = int(observable_upsampling_factor)
+        self.observable_batch_size = int(observable_batch_size)
+
+        if self.observable_batch_size <= 0:
+            raise ValueError(
+                "observable_batch_size must be strictly positive."
+            )
         self.min_observable_samples = int(min_observable_samples)
         self.sampling_start_iter = int(sampling_start_iter)
         self.sampling_interval = int(sampling_interval)
@@ -182,12 +199,20 @@ class PopDyn:
         if seed is not None:
             self.torch_generator.manual_seed(int(seed))
 
-        self.use_wandb = bool(use_wandb and WANDB_AVAILABLE)
+        if use_wandb and not WANDB_AVAILABLE:
+            raise ImportError(
+                "use_wandb=True, but wandb is not installed in this Python environment. "
+                "Install it with: python -m pip install wandb"
+            )
+        self.use_wandb = bool(use_wandb)
         self.wandb_project = wandb_project
         self.wandb_group = wandb_group
         self.wandb_name = wandb_name
         self.wandb_config_extra = wandb_config_extra or {}
         self.log_every = int(log_every)
+        self.wandb_log_plots = bool(wandb_log_plots)
+        self.save_final_plots = bool(save_final_plots)
+        self.final_plot_bins = int(final_plot_bins)
 
         self.save_locally = bool(save_locally)
         self.save_dir = save_dir
@@ -203,9 +228,43 @@ class PopDyn:
         else:
             self.run_name = run_name
 
+        self.diagnostic_every = (
+            None if diagnostic_every is None else int(diagnostic_every)
+        )
+        self.diagnostic_hist_bins = int(diagnostic_hist_bins)
+        self.diagnostic_sample_size = int(diagnostic_sample_size)
+        self.save_diagnostic_plots = bool(save_diagnostic_plots)
+        self.population_diagnostic_history: List[Dict[str, Any]] = []
+
+        self.observable_iterations: List[int] = []
+
+        if self.K <= 0:
+            raise ValueError("K must be positive.")
+        if self.d <= 0:
+            raise ValueError("d must be positive.")
+        if self.M <= 0:
+            raise ValueError("M must be positive.")
+        if not 0.0 <= self.damping < 1.0:
+            raise ValueError("damping must satisfy 0 <= damping < 1.")
+        if self.num_updated > self.M:
+            raise ValueError("num_updated cannot exceed M.")
+        if self.diagnostic_every is not None and self.diagnostic_every <= 0:
+            raise ValueError("diagnostic_every must be positive or None.")
+        if self.diagnostic_hist_bins <= 0:
+            raise ValueError("diagnostic_hist_bins must be positive.")
+        if self.diagnostic_sample_size <= 0:
+            raise ValueError("diagnostic_sample_size must be positive.")
+
         initial_population = self._initialize_population()
         self.population = torch.as_tensor(initial_population, dtype=self.torch_dtype, device=self.device)
         self.old_population = self.population.clone()
+
+        if self.population.shape != (self.M, self.K, self.K):
+            raise RuntimeError(
+                f"Incorrect initialized population shape: "
+                f"got {tuple(self.population.shape)}, "
+                f"expected {(self.M, self.K, self.K)}"
+            )
 
         self._diag_idx = torch.arange(self.K, device=self.device)
         self._r_parent = torch.arange(self.num_parents + 1, device=self.device)
@@ -284,22 +343,71 @@ class PopDyn:
 
 
     def _normalize_message(self, chi: np.ndarray) -> np.ndarray:
+        """Return one non-negative, normalized message.
+
+        A non-finite or zero-mass input is replaced by the uniform K x K
+        message. This helper is used for initialization inputs.
+        """
         chi = np.asarray(chi, dtype=self.dtype)
-
+        chi = np.where(np.isfinite(chi), chi, 0.0)
         chi = np.maximum(chi, 0.0)
-        Z = chi.sum()
 
-        if Z <= self.eps:
+        mass = float(chi.sum())
+        if not np.isfinite(mass) or mass <= self.eps:
             return np.full(
                 self.message_shape,
                 1.0 / (self.K * self.K),
                 dtype=self.dtype,
             )
 
-        return chi / Z
+        return chi / mass
 
+    @torch.inference_mode()
+    def _normalize_messages_torch(
+        self,
+        messages: torch.Tensor,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Normalize a batch of K x K messages independently.
+
+        Non-finite, negative, or zero-mass messages are replaced by the
+        uniform message. The returned Boolean mask identifies replacements.
+        """
+        if messages.ndim != 3 or messages.shape[1:] != self.message_shape:
+            raise ValueError(
+                "Expected messages with shape "
+                f"(B, {self.K}, {self.K}), got {tuple(messages.shape)}."
+            )
+
+        finite_messages = torch.isfinite(messages).all(dim=(1, 2))
+        cleaned = torch.where(
+            torch.isfinite(messages),
+            messages,
+            torch.zeros_like(messages),
+        ).clamp_min(0.0)
+
+        mass = cleaned.sum(dim=(1, 2), keepdim=True)
+        scalar_mass = mass[:, 0, 0]
+        bad = (
+            ~finite_messages
+            | ~torch.isfinite(scalar_mass)
+            | (scalar_mass <= self.torch_eps)
+        )
+
+        normalized = cleaned / mass.clamp_min(self.torch_eps)
+        uniform = torch.full_like(
+            normalized,
+            1.0 / (self.K * self.K),
+        )
+        normalized = torch.where(
+            bad[:, None, None],
+            uniform,
+            normalized,
+        )
+
+        return normalized, bad
 
     def _normalize_population(self, pop: np.ndarray) -> np.ndarray:
+        """Normalize every message in a NumPy population independently."""
         pop = np.asarray(pop, dtype=self.dtype)
 
         if pop.shape != self.population_shape:
@@ -308,16 +416,20 @@ class PopDyn:
                 f"got {pop.shape}."
             )
 
+        pop = np.where(np.isfinite(pop), pop, 0.0)
         pop = np.maximum(pop, 0.0)
-        Z = pop.sum(axis=(1, 2), keepdims=True)
 
-        bad = Z[:, 0, 0] <= self.eps
+        mass = pop.sum(axis=(1, 2), keepdims=True)
+        bad = (
+            ~np.isfinite(mass[:, 0, 0])
+            | (mass[:, 0, 0] <= self.eps)
+        )
 
         if np.any(bad):
             pop[bad] = 1.0 / (self.K * self.K)
-            Z = pop.sum(axis=(1, 2), keepdims=True)
+            mass = pop.sum(axis=(1, 2), keepdims=True)
 
-        return pop / Z
+        return pop / mass
 
 
     def _initialize_population(self) -> np.ndarray:
@@ -419,6 +531,7 @@ class PopDyn:
             "convergence_check_every": self.convergence_check_every,
             "num_samples": self.num_samples,
             "observable_upsampling_factor": self.observable_upsampling_factor,
+            "observable_batch_size": self.observable_batch_size,
             "min_observable_samples": self.min_observable_samples,
             "sampling_start_iter": self.sampling_start_iter,
             "sampling_interval": self.sampling_interval,
@@ -430,6 +543,13 @@ class PopDyn:
             "seed": self.seed,
             "device": str(self.device),
             "torch_dtype": str(self.torch_dtype),
+            "wandb_log_plots": self.wandb_log_plots,
+            "save_final_plots": self.save_final_plots,
+            "final_plot_bins": self.final_plot_bins,
+            "diagnostic_every": self.diagnostic_every,
+            "diagnostic_hist_bins": self.diagnostic_hist_bins,
+            "diagnostic_sample_size": self.diagnostic_sample_size,
+            "save_diagnostic_plots": self.save_diagnostic_plots,
             **self.wandb_config_extra,
         }
 
@@ -438,7 +558,14 @@ class PopDyn:
             group=self.wandb_group,
             name=self.wandb_name or self.run_name,
             config=config,
+            reinit="finish_previous",
         )
+
+        if self.wandb_run is None:
+            raise RuntimeError(
+                "wandb.init() did not create a run. Check WANDB_MODE, authentication, "
+                "and network access from the compute node."
+            )
 
     def __repr__(self) -> str:
         lines = [
@@ -563,27 +690,95 @@ class PopDyn:
         tensor = torch.as_tensor(parent_messages, dtype=self.torch_dtype, device=self.device)
         return self._candidate_messages_torch(tensor)
 
-    def _randomly_permute_colors_torch(self, messages: torch.Tensor) -> torch.Tensor:
-        B = messages.shape[0]
-        if self.K == 2:
-            swap = torch.randint(0, 2, (B,), device=self.device, generator=self.torch_generator, dtype=torch.bool)
-            out = messages.clone()
-            out[swap] = messages[swap][:, [1, 0]][:, :, [1, 0]]
-            return out
-        # Vectorized independent random permutations; avoids a Python loop over B.
-        perms = torch.rand((B, self.K), device=self.device, generator=self.torch_generator).argsort(dim=1)
-        rows = perms[:, :, None].expand(-1, -1, self.K)
-        permuted_rows = torch.gather(messages, 1, rows)
-        cols = perms[:, None, :].expand(-1, self.K, -1)
-        return torch.gather(permuted_rows, 2, cols)
+    def _randomly_permute_colors_torch(
+        self,
+        messages: torch.Tensor,
+    ) -> torch.Tensor:
+        if messages.ndim != 3:
+            raise ValueError(
+                f"Expected messages of shape (B, K, K), got {messages.shape}"
+            )
+
+        B, K1, K2 = messages.shape
+
+        if K1 != self.K or K2 != self.K:
+            raise ValueError(
+                f"Expected trailing shape ({self.K}, {self.K}), "
+                f"got ({K1}, {K2})"
+            )
+
+        # Generate valid permutations on CPU.
+        random_values = self.rng.random((B, self.K))
+        perms_np = np.argsort(random_values, axis=1).astype(np.int64)
+
+        perms = torch.from_numpy(perms_np).to(
+            device=self.device,
+            dtype=torch.long,
+        )
+
+        permutation_matrices = torch.nn.functional.one_hot(
+            perms,
+            num_classes=self.K,
+        ).to(dtype=messages.dtype)
+
+        # chi'[x,y] = chi[perm[x], perm[y]]
+        return torch.bmm(
+            torch.bmm(permutation_matrices, messages),
+            permutation_matrices.transpose(1, 2),
+        )
 
     def _randomly_permute_colors(self, messages):
         tensor = torch.as_tensor(messages, dtype=self.torch_dtype, device=self.device)
         return self._randomly_permute_colors_torch(tensor)
 
     @torch.inference_mode()
+    def population_health(self) -> Dict[str, Any]:
+        pop = self.population
+
+        finite_mask = torch.isfinite(pop)
+        message_mass = pop.sum(dim=(1, 2))
+
+        finite_messages = finite_mask.all(dim=(1, 2))
+        zero_messages = message_mass <= self.torch_eps
+
+        mean_message = pop.mean(dim=0)
+
+        stats = {
+            "iteration": int(self.iteration),
+            "population_min": float(torch.nan_to_num(pop).min().item()),
+            "population_max": float(torch.nan_to_num(pop).max().item()),
+            "mean_message": mean_message.detach().cpu().numpy(),
+            "mean_message_sum": float(mean_message.sum().item()),
+            "mass_min": float(torch.nan_to_num(message_mass).min().item()),
+            "mass_max": float(torch.nan_to_num(message_mass).max().item()),
+            "mass_mean": float(torch.nan_to_num(message_mass).mean().item()),
+            "mass_std": float(torch.nan_to_num(message_mass).std().item()),
+            "max_normalization_error": float(
+                torch.nan_to_num(torch.abs(message_mass - 1.0)).max().item()
+            ),
+            "nonfinite_message_fraction": float(
+                (~finite_messages).to(self.torch_dtype).mean().item()
+            ),
+            "zero_message_fraction": float(
+                zero_messages.to(self.torch_dtype).mean().item()
+            ),
+            "zero_component_fraction": float(
+                (pop <= self.torch_eps).to(self.torch_dtype).mean().item()
+            ),
+        }
+
+        return stats
+
+    @torch.inference_mode()
     def step(self, snapshot_old: bool = True) -> None:
-        if snapshot_old and not self.no_update:
+        """Perform one population-dynamics update.
+
+        Invalid zero-partition candidates are excluded from the 1RSB
+        resampling measure. If no valid candidate exists, the population is
+        left unchanged for this iteration. Valid selected candidates are
+        normalized independently before insertion.
+        """
+        if snapshot_old:
             self.old_population.copy_(self.population)
 
         if self.num_parents == 0:
@@ -594,42 +789,140 @@ class PopDyn:
             )
         else:
             parent_indices = torch.randint(
-                self.M,
-                (self.num_updated, self.num_parents),
+                low=0,
+                high=self.M,
+                size=(self.num_updated, self.num_parents),
                 device=self.device,
                 generator=self.torch_generator,
+                dtype=torch.long,
             )
-            parent_messages = self.population[parent_indices]
+            parent_messages = torch.index_select(
+                self.population,
+                dim=0,
+                index=parent_indices.reshape(-1),
+            ).reshape(
+                self.num_updated,
+                self.num_parents,
+                self.K,
+                self.K,
+            )
 
-        candidates, Z = self._candidate_messages_torch(parent_messages)
-        safe_Z = Z.clamp_min(self.eps)
-        log_weights = self.mparisi * torch.log(safe_Z)
-        log_weights -= torch.max(log_weights)
+        candidates, candidate_mass = self._candidate_messages_torch(
+            parent_messages
+        )
+        finite_mass = torch.isfinite(candidate_mass)
+        valid = finite_mass & (candidate_mass > self.torch_eps)
+        valid_indices = torch.nonzero(valid, as_tuple=False).flatten()
+
+        should_record = (
+            self.diagnostic_every is not None
+            and self.diagnostic_every > 0
+            and (self.iteration + 1) % self.diagnostic_every == 0
+        )
+
+        if valid_indices.numel() == 0:
+            self.no_update = True
+            self.iteration += 1
+
+            if should_record:
+                self._record_and_save_diagnostics(candidate_mass)
+
+            return
+
+        valid_candidates = torch.index_select(
+            candidates,
+            dim=0,
+            index=valid_indices,
+        )
+        valid_mass = torch.index_select(
+            candidate_mass,
+            dim=0,
+            index=valid_indices,
+        )
+
+        log_weights = self.mparisi * torch.log(
+            valid_mass.clamp_min(self.torch_eps)
+        )
+        log_weights -= log_weights.max()
+
         weights = torch.exp(log_weights)
-        weights = torch.where(torch.isfinite(weights) & (Z > self.eps), weights, torch.zeros_like(weights))
-        # Keep the update fully on-device. The fallback is only used in a pathological
-        # all-zero batch and avoids a host synchronization in every normal iteration.
-        weights = torch.where(weights.sum() > self.eps, weights, torch.ones_like(weights))
+        weights = torch.where(
+            torch.isfinite(weights),
+            weights,
+            torch.zeros_like(weights),
+        )
+
+        if float(weights.sum().item()) <= self.torch_eps:
+            self.no_update = True
+            self.iteration += 1
+
+            if should_record:
+                self._record_and_save_diagnostics(candidate_mass)
+
+            return
 
         selected = torch.multinomial(
             weights,
-            self.num_updated,
+            num_samples=self.num_updated,
             replacement=True,
             generator=self.torch_generator,
         )
-        new_messages = candidates[selected] / safe_Z[selected, None, None]
+        selected_candidates = torch.index_select(
+            valid_candidates,
+            dim=0,
+            index=selected,
+        )
+
+        new_messages, bad_new_messages = self._normalize_messages_torch(
+            selected_candidates
+        )
+        num_fallbacks = int(bad_new_messages.sum().item())
+        self.diagnostics["last_uniform_fallbacks"] = num_fallbacks
+        self.diagnostics["total_uniform_fallbacks"] = (
+            int(self.diagnostics.get("total_uniform_fallbacks", 0))
+            + num_fallbacks
+        )
 
         if self.impose_color_symmetry:
             new_messages = self._randomly_permute_colors_torch(new_messages)
 
+        population_size = int(self.population.shape[0])
+        if population_size != self.M:
+            raise RuntimeError(
+                "Population-size mismatch: "
+                f"shape[0]={population_size}, M={self.M}."
+            )
+        if new_messages.shape != (
+            self.num_updated,
+            self.K,
+            self.K,
+        ):
+            raise RuntimeError(
+                "Invalid replacement batch shape: "
+                f"got {tuple(new_messages.shape)}, expected "
+                f"{(self.num_updated, self.K, self.K)}."
+            )
+        if not bool(torch.isfinite(new_messages).all().item()):
+            raise RuntimeError("Non-finite values remain in new messages.")
+
         replace_indices = torch.randperm(
-            self.M,
+            population_size,
             device=self.device,
             generator=self.torch_generator,
+            dtype=torch.long,
         )[:self.num_updated]
-        self.population[replace_indices] = new_messages
+
+        self.population.index_copy_(
+            dim=0,
+            index=replace_indices,
+            source=new_messages,
+        )
+
         self.no_update = False
         self.iteration += 1
+
+        if should_record:
+            self._record_and_save_diagnostics(candidate_mass)
 
     def run(
         self,
@@ -641,6 +934,7 @@ class PopDyn:
         reset_samples: bool = True,
         stable_checks_required: int = 5,
         verbose: int = 1,
+        finish_wandb: bool = True,
     ) -> None:
         if max_iter is None:
             max_iter = self.max_iter
@@ -741,8 +1035,14 @@ class PopDyn:
             msg += f", runtime={elapsed:.2f}s"
             print(msg)
 
+        if self.save_final_plots or (self.use_wandb and self.wandb_log_plots):
+            self._save_and_log_final_plots()
+
         if self.use_wandb:
             self._log_wandb(final=True)
+            if finish_wandb and self.wandb_run is not None:
+                self.wandb_run.finish()
+                self.wandb_run = None
 
 
     def _reset_observable_samples(self) -> None:
@@ -751,6 +1051,7 @@ class PopDyn:
         self.complexity_samples = []
         self.rho_samples = []
         self.s_samples = []
+        self.observable_iterations = []
 
         self.psi_mean = None
         self.phi_mean = None
@@ -768,6 +1069,7 @@ class PopDyn:
     def _record_current_observables(self) -> None:
         if self.psi is not None:
             self.psi_samples.append(float(self.psi))
+            self.observable_iterations.append(int(self.iteration))
         if self.phi is not None:
             self.phi_samples.append(float(self.phi))
         if self.complexity is not None:
@@ -845,7 +1147,111 @@ class PopDyn:
             for a, value in enumerate(self.rho_std):
                 data[f"rho_std/{a}"] = float(value)
 
-        wandb.log(data, step=self.iteration)
+        if self.wandb_run is None:
+            raise RuntimeError("wandb logging was requested, but no active wandb run exists.")
+        self.wandb_run.log(data, step=self.iteration)
+
+        if "last_observable_node_samples" in self.diagnostics:
+            data["observables/node_sample_count"] = (
+                self.diagnostics[
+                    "last_observable_node_samples"
+                ]
+            )
+
+        if "last_observable_edge_samples" in self.diagnostics:
+            data["observables/edge_sample_count"] = (
+                self.diagnostics[
+                    "last_observable_edge_samples"
+                ]
+            )
+
+        if "observable_batch_size" in self.diagnostics:
+            data["observables/batch_size"] = (
+                self.diagnostics[
+                    "observable_batch_size"
+                ]
+            )
+
+
+    def _save_and_log_final_plots(self) -> None:
+        """Create the same diagnostic plots as the NumPy implementation.
+
+        Population tensors are copied to CPU only here, after the simulation has
+        finished. Figures are optionally saved locally and uploaded to wandb.
+        """
+        plot_dir = os.path.join(self.save_dir, self.run_name, "plots")
+        if self.save_final_plots and self.save_locally:
+            os.makedirs(plot_dir, exist_ok=True)
+
+        figures: Dict[str, Any] = {}
+
+        figures["population_histograms"] = self.plot_population_histograms(
+            n_bins=self.final_plot_bins,
+            save_path=(
+                os.path.join(plot_dir, "population_histograms.png")
+                if self.save_final_plots and self.save_locally else None
+            ),
+            show=False,
+        )
+        figures["population_atoms"] = self.plot_population_atoms(
+            decimals=12,
+            max_atoms=200,
+            sample_size=100_000,
+            save_path=(
+                os.path.join(
+                    plot_dir,
+                    "population_atoms.png",
+                )
+                if self.save_final_plots and self.save_locally
+                else None
+            ),
+            show=False,
+        )
+        figures["mean_message"] = self.plot_mean_message(
+            save_path=(
+                os.path.join(plot_dir, "mean_message.png")
+                if self.save_final_plots and self.save_locally else None
+            ),
+            show=False,
+        )
+
+        if len(self.population_diagnostic_history) > 0:
+            figures["mean_message_evolution"] = self.plot_mean_message_evolution(
+                save_path=(
+                    os.path.join(plot_dir, "mean_message_evolution.png")
+                    if self.save_final_plots and self.save_locally else None
+                ),
+                show=False,
+            )
+
+        if len(self.psi_samples) > 0:
+            figures["observable_samples"] = self.plot_observable_samples(
+                save_path=(
+                    os.path.join(plot_dir, "observable_samples.png")
+                    if self.save_final_plots and self.save_locally else None
+                ),
+                show=False,
+            )
+
+        if self.use_wandb and self.wandb_log_plots:
+            if self.wandb_run is None:
+                raise RuntimeError("Cannot log plots because there is no active wandb run.")
+            if self.use_wandb and self.wandb_log_plots:
+                if self.wandb_run is None:
+                    raise RuntimeError(
+                        "Cannot log plots because there is no active W&B run."
+                    )
+
+                for name, fig in figures.items():
+                    self.wandb_run.log(
+                        {
+                            f"plots/{name}": wandb.Image(fig),
+                        },
+                        step=self.iteration,
+                    )
+
+        for fig in figures.values():
+            plt.close(fig)
 
     def reset_population(
         self,
@@ -871,6 +1277,7 @@ class PopDyn:
         self._has_node_field = self._has_message_field
         self.no_update = False
         self.last_diff = None
+        self.population_diagnostic_history = []
 
         if reset_iteration:
             self.iteration = 0
@@ -926,55 +1333,268 @@ class PopDyn:
 
 
     @torch.inference_mode()
-    def update_observables(self, num_samples: Optional[int] = None) -> None:
-        node_num_samples, edge_num_samples = self._observable_sample_counts(num_samples)
-
-        node_indices = torch.randint(
-            self.M, (node_num_samples, self.d), device=self.device, generator=self.torch_generator
+    def update_observables(
+        self,
+        num_samples: Optional[int] = None,
+    ) -> None:
+        node_num_samples, edge_num_samples = (
+            self._observable_sample_counts(num_samples)
         )
-        node_messages = self.population[node_indices]
-        color_weights, Z_node = self._node_partition_terms(node_messages)
 
-        edge_indices = torch.randint(
-            self.M, (edge_num_samples, 2), device=self.device, generator=self.torch_generator
+        batch_size = self.observable_batch_size
+
+        scalar_zero = torch.zeros(
+            (),
+            dtype=self.torch_dtype,
+            device=self.device,
         )
-        msg_1 = self.population[edge_indices[:, 0]]
-        msg_2 = self.population[edge_indices[:, 1]]
-        Z_edge = (msg_1 * msg_2.transpose(1, 2)).sum(dim=(1, 2))
 
-        valid_node = Z_node > self.eps
-        valid_edge = Z_edge > self.eps
-        node_power = torch.where(valid_node, torch.pow(Z_node, self.mparisi), 0.0)
-        edge_power = torch.where(valid_edge, torch.pow(Z_edge, self.mparisi), 0.0)
-        Z_node_mean = node_power.mean()
-        Z_edge_mean = edge_power.mean()
+        # ---------------------------------------------------------
+        # Node contributions
+        # ---------------------------------------------------------
+        node_power_sum = scalar_zero.clone()
+        node_power_log_sum = scalar_zero.clone()
 
-        if float(Z_node_mean) <= self.eps or float(Z_edge_mean) <= self.eps:
+        rho_numerator_sum = torch.zeros(
+            self.K,
+            dtype=self.torch_dtype,
+            device=self.device,
+        )
+
+        processed_node_samples = 0
+
+        while processed_node_samples < node_num_samples:
+            current_batch = min(
+                batch_size,
+                node_num_samples - processed_node_samples,
+            )
+
+            node_indices = torch.randint(
+                low=0,
+                high=self.M,
+                size=(current_batch, self.d),
+                device=self.device,
+                generator=self.torch_generator,
+                dtype=torch.long,
+            )
+
+            node_messages = torch.index_select(
+                self.population,
+                dim=0,
+                index=node_indices.reshape(-1),
+            ).reshape(
+                current_batch,
+                self.d,
+                self.K,
+                self.K,
+            )
+
+            color_weights, Z_node = (
+                self._node_partition_terms(node_messages)
+            )
+
+            valid_node = (
+                torch.isfinite(Z_node)
+                & (Z_node > self.eps)
+            )
+
+            safe_Z_node = torch.where(
+                valid_node,
+                Z_node,
+                torch.ones_like(Z_node),
+            )
+
+            node_power = torch.where(
+                valid_node,
+                torch.pow(safe_Z_node, self.mparisi),
+                torch.zeros_like(Z_node),
+            )
+
+            node_log = torch.where(
+                valid_node,
+                torch.log(safe_Z_node),
+                torch.zeros_like(Z_node),
+            )
+
+            node_power_sum += node_power.sum()
+            node_power_log_sum += (
+                node_power * node_log
+            ).sum()
+
+            if self.mparisi == 0.0:
+                rho_weights = torch.where(
+                    valid_node,
+                    1.0 / safe_Z_node,
+                    torch.zeros_like(Z_node),
+                )
+            else:
+                rho_weights = torch.where(
+                    valid_node,
+                    torch.pow(
+                        safe_Z_node,
+                        self.mparisi - 1.0,
+                    ),
+                    torch.zeros_like(Z_node),
+                )
+
+            rho_numerator_sum += (
+                color_weights * rho_weights[:, None]
+            ).sum(dim=0)
+
+            processed_node_samples += current_batch
+
+        # ---------------------------------------------------------
+        # Edge contributions
+        # ---------------------------------------------------------
+        edge_power_sum = scalar_zero.clone()
+        edge_power_log_sum = scalar_zero.clone()
+
+        processed_edge_samples = 0
+
+        while processed_edge_samples < edge_num_samples:
+            current_batch = min(
+                batch_size,
+                edge_num_samples - processed_edge_samples,
+            )
+
+            edge_indices = torch.randint(
+                low=0,
+                high=self.M,
+                size=(current_batch, 2),
+                device=self.device,
+                generator=self.torch_generator,
+                dtype=torch.long,
+            )
+
+            msg_1 = torch.index_select(
+                self.population,
+                dim=0,
+                index=edge_indices[:, 0],
+            )
+
+            msg_2 = torch.index_select(
+                self.population,
+                dim=0,
+                index=edge_indices[:, 1],
+            )
+
+            Z_edge = (
+                msg_1 * msg_2.transpose(1, 2)
+            ).sum(dim=(1, 2))
+
+            valid_edge = (
+                torch.isfinite(Z_edge)
+                & (Z_edge > self.eps)
+            )
+
+            safe_Z_edge = torch.where(
+                valid_edge,
+                Z_edge,
+                torch.ones_like(Z_edge),
+            )
+
+            edge_power = torch.where(
+                valid_edge,
+                torch.pow(safe_Z_edge, self.mparisi),
+                torch.zeros_like(Z_edge),
+            )
+
+            edge_log = torch.where(
+                valid_edge,
+                torch.log(safe_Z_edge),
+                torch.zeros_like(Z_edge),
+            )
+
+            edge_power_sum += edge_power.sum()
+            edge_power_log_sum += (
+                edge_power * edge_log
+            ).sum()
+
+            processed_edge_samples += current_batch
+
+        # ---------------------------------------------------------
+        # Convert accumulated sums into Monte Carlo means
+        # ---------------------------------------------------------
+        Z_node_mean = (
+            node_power_sum / node_num_samples
+        )
+
+        Z_edge_mean = (
+            edge_power_sum / edge_num_samples
+        )
+
+        if (
+            not bool(torch.isfinite(Z_node_mean).item())
+            or not bool(torch.isfinite(Z_edge_mean).item())
+            or bool((Z_node_mean <= self.eps).item())
+            or bool((Z_edge_mean <= self.eps).item())
+        ):
             self.psi = -np.inf
             self.phi = np.nan
             self.complexity = np.nan
-            self.rho = np.full(self.K, np.nan, dtype=self.dtype)
+            self.rho = np.full(
+                self.K,
+                np.nan,
+                dtype=self.dtype,
+            )
             self.s = np.nan
+
+            self.diagnostics[
+                "last_observable_node_samples"
+            ] = node_num_samples
+
+            self.diagnostics[
+                "last_observable_edge_samples"
+            ] = edge_num_samples
+
             return
 
-        log_Z_node = torch.where(valid_node, torch.log(Z_node), 0.0)
-        log_Z_edge = torch.where(valid_edge, torch.log(Z_edge), 0.0)
-        Z_node_log_mean = (node_power * log_Z_node).mean()
-        Z_edge_log_mean = (edge_power * log_Z_edge).mean()
+        Z_node_log_mean = (
+            node_power_log_sum / node_num_samples
+        )
 
-        psi = torch.log(Z_node_mean) - 0.5 * self.d * torch.log(Z_edge_mean)
-        phi = Z_node_log_mean / Z_node_mean - 0.5 * self.d * Z_edge_log_mean / Z_edge_mean
+        Z_edge_log_mean = (
+            edge_power_log_sum / edge_num_samples
+        )
+
+        psi = (
+            torch.log(Z_node_mean)
+            - 0.5 * self.d * torch.log(Z_edge_mean)
+        )
+
+        phi = (
+            Z_node_log_mean / Z_node_mean
+            - 0.5
+            * self.d
+            * Z_edge_log_mean
+            / Z_edge_mean
+        )
+
+        complexity = psi - self.mparisi * phi
+
+        rho_numerator_mean = (
+            rho_numerator_sum / node_num_samples
+        )
+
+        rho = rho_numerator_mean / Z_node_mean
+
         self.psi = float(psi.item())
         self.phi = float(phi.item())
-        self.complexity = float((psi - self.mparisi * phi).item())
-
-        if self.mparisi == 0.0:
-            rho_weights = torch.where(valid_node, 1.0 / Z_node, 0.0)
-        else:
-            rho_weights = torch.where(valid_node, torch.pow(Z_node, self.mparisi - 1.0), 0.0)
-        rho_num = (color_weights * rho_weights[:, None]).mean(dim=0)
-        self.rho = (rho_num / Z_node_mean).detach().cpu().numpy()
+        self.complexity = float(complexity.item())
+        self.rho = rho.detach().cpu().numpy()
         self.s = self.phi
+
+        self.diagnostics[
+            "last_observable_node_samples"
+        ] = node_num_samples
+
+        self.diagnostics[
+            "last_observable_edge_samples"
+        ] = edge_num_samples
+
+        self.diagnostics[
+            "observable_batch_size"
+        ] = batch_size
 
     def _population_numpy(self, old: bool = False) -> np.ndarray:
         pop = self.old_population if old else self.population
@@ -1055,7 +1675,7 @@ class PopDyn:
                     pop[:, x, y],
                     bins=bin_edges,
                     density=density,
-                    rwidth=0.9,
+                    rwidth=1.0,
                 )
 
                 mean_value = np.mean(pop[:, x, y])
@@ -1510,15 +2130,40 @@ class PopDyn:
         self,
         decimals: int = 12,
         old: bool = False,
+        max_atoms: int = 200,
+        sample_size: int = 100_000,
         title: Optional[str] = None,
         save_path: Optional[str] = None,
         show: bool = True,
     ):
-        pop = self._population_numpy(old=old)
+        pop_tensor = self.old_population if old else self.population
+
+        sample_size = min(int(sample_size), self.M)
+
+        if sample_size < self.M:
+            indices = torch.randint(
+                low=0,
+                high=self.M,
+                size=(sample_size,),
+                device=self.device,
+                generator=self.torch_generator,
+                dtype=torch.long,
+            )
+
+            pop = torch.index_select(
+                pop_tensor,
+                dim=0,
+                index=indices,
+            ).detach().cpu().numpy()
+        else:
+            pop = pop_tensor.detach().cpu().numpy()
 
         if title is None:
             which = "old population" if old else "population"
-            title = f"{which} atoms\n{self._default_title()}"
+            title = (
+                f"{which} approximate atoms\n"
+                f"{self._default_title()}"
+            )
 
         fig, axes = plt.subplots(
             self.K,
@@ -1531,28 +2176,329 @@ class PopDyn:
             for y in range(self.K):
                 ax = axes[x, y]
 
-                values = np.round(pop[:, x, y], decimals=decimals)
-                unique, counts = np.unique(values, return_counts=True)
+                component = pop[:, x, y]
+                rounded = np.round(component, decimals=decimals)
 
-                ax.bar(unique, counts, width=0.015)
+                unique, counts = np.unique(
+                    rounded,
+                    return_counts=True,
+                )
+
+                total_unique = len(unique)
+
+                if total_unique > max_atoms:
+                    most_frequent = np.argpartition(
+                        counts,
+                        -max_atoms,
+                    )[-max_atoms:]
+
+                    unique = unique[most_frequent]
+                    counts = counts[most_frequent]
+
+                    order = np.argsort(unique)
+                    unique = unique[order]
+                    counts = counts[order]
+
+                if len(unique) > 1:
+                    sorted_unique = np.sort(unique)
+                    separations = np.diff(sorted_unique)
+                    positive_separations = separations[
+                        separations > 0
+                    ]
+
+                    if len(positive_separations) > 0:
+                        width = min(
+                            0.015,
+                            0.8 * np.min(positive_separations),
+                        )
+                    else:
+                        width = 0.015
+                else:
+                    width = 0.015
+
+                ax.bar(
+                    unique,
+                    counts,
+                    width=width,
+                    align="center",
+                )
+
+                mean_value = float(np.mean(component))
+                ax.axvline(mean_value, linestyle="--")
+
                 ax.set_xlim(-0.02, 1.02)
                 ax.set_title(rf"$\chi_{{{x},{y}}}$")
-                ax.set_xlabel("value")
-                ax.set_ylabel("count")
+                ax.set_xlabel("rounded value")
+                ax.set_ylabel("sample count")
 
-                mean_value = np.mean(pop[:, x, y])
-                ax.axvline(mean_value, linestyle="--")
+                text = (
+                    f"mean={mean_value:.4g}\n"
+                    f"sample={sample_size:,}\n"
+                    f"unique={total_unique:,}"
+                )
+
+                if total_unique > max_atoms:
+                    text += f"\nshowing top {max_atoms}"
+
                 ax.text(
                     0.98,
-                    0.92,
-                    f"mean={mean_value:.4g}",
+                    0.95,
+                    text,
                     transform=ax.transAxes,
                     ha="right",
                     va="top",
+                    fontsize=8,
                 )
 
         fig.suptitle(title)
         fig.tight_layout()
 
-        return self._finalize_plot(fig, save_path=save_path, show=show)
+        return self._finalize_plot(
+            fig,
+            save_path=save_path,
+            show=show,
+        )
     
+    @torch.inference_mode()
+    def _record_and_save_diagnostics(
+        self,
+        candidate_mass: Optional[torch.Tensor] = None,
+    ) -> None:
+        """Record scalar diagnostics and save one sampled histogram snapshot."""
+        health = self.record_population_diagnostic(
+            candidate_Z=candidate_mass
+        )
+        snapshot = self.diagnostic_histogram_snapshot()
+        path = self.save_diagnostic_histogram(snapshot)
+
+        print(
+            f"[diagnostic iter={self.iteration}] "
+            f"mass_mean={health['mass_mean']:.8g}, "
+            f"mass_min={health['mass_min']:.8g}, "
+            f"max_norm_error={health['max_normalization_error']:.3e}, "
+            f"zero_messages={health['zero_message_fraction']:.3e}, "
+            f"zero_components={health['zero_component_fraction']:.3e}, "
+            f"valid_candidates="
+            f"{health.get('valid_candidate_fraction', float('nan')):.3e}, "
+            f"uniform_fallbacks="
+            f"{self.diagnostics.get('last_uniform_fallbacks', 0)}, "
+            f"saved={path}",
+            flush=True,
+        )
+
+    @torch.inference_mode()
+    def record_population_diagnostic(
+        self,
+        candidate_Z: Optional[torch.Tensor] = None,
+    ) -> Dict[str, Any]:
+        health = self.population_health()
+
+        if candidate_Z is not None:
+            finite_Z = torch.isfinite(candidate_Z)
+            valid_Z = finite_Z & (candidate_Z > self.torch_eps)
+
+            health.update({
+                "candidate_Z_min": float(
+                    torch.nan_to_num(candidate_Z).min().item()
+                ),
+                "candidate_Z_max": float(
+                    torch.nan_to_num(candidate_Z).max().item()
+                ),
+                "candidate_Z_mean": float(
+                    torch.nan_to_num(candidate_Z).mean().item()
+                ),
+                "valid_candidate_fraction": float(
+                    valid_Z.to(self.torch_dtype).mean().item()
+                ),
+                "zero_candidate_fraction": float(
+                    (candidate_Z <= self.torch_eps)
+                    .to(self.torch_dtype)
+                    .mean()
+                    .item()
+                ),
+                "nonfinite_candidate_fraction": float(
+                    (~finite_Z)
+                    .to(self.torch_dtype)
+                    .mean()
+                    .item()
+                ),
+            })
+
+        self.population_diagnostic_history.append(health)
+
+        if self.use_wandb and self.wandb_run is not None:
+            data = {
+                "diagnostics/population_min": health["population_min"],
+                "diagnostics/population_max": health["population_max"],
+                "diagnostics/mean_message_sum": health["mean_message_sum"],
+                "diagnostics/mass_min": health["mass_min"],
+                "diagnostics/mass_max": health["mass_max"],
+                "diagnostics/mass_mean": health["mass_mean"],
+                "diagnostics/max_normalization_error":
+                    health["max_normalization_error"],
+                "diagnostics/nonfinite_message_fraction":
+                    health["nonfinite_message_fraction"],
+                "diagnostics/zero_message_fraction":
+                    health["zero_message_fraction"],
+                "diagnostics/zero_component_fraction":
+                    health["zero_component_fraction"],
+            }
+
+            for key in (
+                "valid_candidate_fraction",
+                "zero_candidate_fraction",
+                "nonfinite_candidate_fraction",
+                "candidate_Z_min",
+                "candidate_Z_max",
+                "candidate_Z_mean",
+            ):
+                if key in health:
+                    data[f"diagnostics/{key}"] = health[key]
+
+            self.wandb_run.log(data, step=self.iteration)
+
+        return health
+        
+    @torch.inference_mode()
+    def diagnostic_histogram_snapshot(
+        self,
+        n_bins: Optional[int] = None,
+        sample_size: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        if n_bins is None:
+            n_bins = self.diagnostic_hist_bins
+
+        if sample_size is None:
+            sample_size = self.diagnostic_sample_size
+
+        sample_size = min(int(sample_size), self.M)
+
+        indices = torch.randint(
+            low=0,
+            high=self.M,
+            size=(sample_size,),
+            device=self.device,
+            generator=self.torch_generator,
+        )
+
+        sampled_population = torch.index_select(
+            self.population,
+            dim=0,
+            index=indices,
+        ).detach().cpu().numpy()
+
+        counts = np.zeros(
+            (self.K, self.K, n_bins),
+            dtype=np.int64,
+        )
+
+        edges = np.linspace(0.0, 1.0, n_bins + 1)
+
+        for x in range(self.K):
+            for y in range(self.K):
+                counts[x, y], _ = np.histogram(
+                    sampled_population[:, x, y],
+                    bins=edges,
+                )
+
+        return {
+            "iteration": int(self.iteration),
+            "counts": counts,
+            "edges": edges,
+            "sample_size": sample_size,
+            "mean_message": sampled_population.mean(axis=0),
+            "message_mass": sampled_population.sum(axis=(1, 2)),
+            "density": False,
+        }
+    
+    def save_diagnostic_histogram(
+        self,
+        snapshot: Dict[str, Any],
+    ) -> Optional[str]:
+        if not self.save_diagnostic_plots:
+            return None
+
+        diagnostic_dir = os.path.join(
+            self.save_dir,
+            self.run_name,
+            "diagnostics",
+        )
+        os.makedirs(diagnostic_dir, exist_ok=True)
+
+        iteration = snapshot["iteration"]
+
+        save_path = os.path.join(
+            diagnostic_dir,
+            f"population_hist_iter_{iteration:07d}.png",
+        )
+
+        fig = self.plot_population_histogram_snapshot(
+            snapshot,
+            title=(
+                f"Population diagnostic at iteration {iteration}\n"
+                f"{self._default_title()}"
+            ),
+            save_path=save_path,
+            show=False,
+        )
+
+        if self.use_wandb and self.wandb_run is not None:
+            self.wandb_run.log(
+                {
+                    "diagnostics/population_histogram":
+                        wandb.Image(fig),
+                },
+                step=iteration,
+            )
+
+        plt.close(fig)
+        return save_path
+    
+    def plot_mean_message_evolution(
+        self,
+        save_path: Optional[str] = None,
+        show: bool = True,
+    ):
+        if len(self.population_diagnostic_history) == 0:
+            raise ValueError("No population diagnostics have been recorded.")
+
+        iterations = np.asarray([
+            item["iteration"]
+            for item in self.population_diagnostic_history
+        ])
+
+        mean_messages = np.stack([
+            item["mean_message"]
+            for item in self.population_diagnostic_history
+        ])
+
+        fig, ax = plt.subplots(figsize=(9, 5))
+
+        for x in range(self.K):
+            for y in range(self.K):
+                ax.plot(
+                    iterations,
+                    mean_messages[:, x, y],
+                    marker="o",
+                    label=rf"$\chi_{{{x},{y}}}$",
+                )
+
+        ax.set_xlabel("iteration")
+        ax.set_ylabel("population mean")
+        ax.set_title(
+            f"Mean-message evolution\n{self._default_title()}"
+        )
+        ax.legend(
+            ncol=min(4, self.K),
+            fontsize=8,
+            bbox_to_anchor=(1.02, 1.0),
+            loc="upper left",
+        )
+
+        fig.tight_layout()
+
+        return self._finalize_plot(
+            fig,
+            save_path=save_path,
+            show=show,
+        )

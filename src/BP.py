@@ -1,4 +1,4 @@
-"""Unified Belief Propagation for H-(dis)assortative balanced K-partitions on
+"""Belief Propagation for H-(dis)assortative balanced K-partitions on
 random d-regular graphs."""
 
 from __future__ import annotations

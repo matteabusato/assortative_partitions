@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --job-name=k2-ass-full
+#SBATCH --job-name=k3-dis-full
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1
@@ -8,9 +8,9 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --time=12:00:00
-#SBATCH --array=0-42%4
-#SBATCH --output=job_output/k2_ass_full_%A_%a.out
-#SBATCH --error=job_output/k2_ass_full_%A_%a.err
+#SBATCH --array=0-48%4
+#SBATCH --output=job_output/k3_dis_full_%A_%a.out
+#SBATCH --error=job_output/k3_dis_full_%A_%a.err
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=mattea.busato@epfl.ch
 
@@ -20,7 +20,7 @@ PROJECT_ROOT="/home/busato/assortative_partitions"
 cd "${PROJECT_ROOT}"
 
 mkdir -p job_output
-mkdir -p results/k2_assortative_full_sweep
+mkdir -p results/k3_disassortative_full_sweep
 
 module purge
 module load gcc/11.3.0
@@ -34,7 +34,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 # Core population-dynamics settings.
 export PD_M="${PD_M:-1000000}"
-export PD_SEED="${PD_SEED:-42}"
+export PD_SEED="${PD_SEED:-43}"
 export PD_MAX_ITER="${PD_MAX_ITER:-20000}"
 export PD_MPARISI="${PD_MPARISI:-1.0}"
 export PD_DAMPING="${PD_DAMPING:-0.8}"
@@ -57,14 +57,12 @@ export PD_REQUIRE_CONVERGENCE_FOR_SAMPLING="${PD_REQUIRE_CONVERGENCE_FOR_SAMPLIN
 # Define it explicitly only to override the upsampling rule.
 
 # Optional intermediate diagnostics. Disabled by default for the full sweep.
-# Example override:
-#   PD_DIAGNOSTIC_EVERY=200 PD_SAVE_DIAGNOSTIC_PLOTS=true sbatch ...
 export PD_SAVE_DIAGNOSTIC_PLOTS="${PD_SAVE_DIAGNOSTIC_PLOTS:-false}"
 export PD_DIAGNOSTIC_HIST_BINS="${PD_DIAGNOSTIC_HIST_BINS:-80}"
 export PD_DIAGNOSTIC_SAMPLE_SIZE="${PD_DIAGNOSTIC_SAMPLE_SIZE:-100000}"
 
 export PD_USE_WANDB="${PD_USE_WANDB:-true}"
-export PD_OUTPUT_DIR="${PD_OUTPUT_DIR:-${PROJECT_ROOT}/results/k2_assortative_full_sweep}"
+export PD_OUTPUT_DIR="${PD_OUTPUT_DIR:-${PROJECT_ROOT}/results/k3_disassortative_full_sweep}"
 
 echo "SLURM_JOB_ID=${SLURM_JOB_ID}"
 echo "SLURM_ARRAY_JOB_ID=${SLURM_ARRAY_JOB_ID:-}"
@@ -73,6 +71,6 @@ echo "Host=$(hostname)"
 echo "Start=$(date --iso-8601=seconds)"
 
 srun --cpu-bind=cores \
-    python -u src/run_k2_assortative_full_sweep.py
+    python -u src/run_k3_disassortative_full_sweep.py
 
 echo "End=$(date --iso-8601=seconds)"
