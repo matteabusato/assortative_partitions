@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug new BP.py",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/BP.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/src",
+      "python": "/Users/matteabusato/Desktop/SPOC Lab/venvs/assortative_partitions/bin/python",
+      "justMyCode": false
+    },
+    {
+      "name": "Debug test2.py",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/test2.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/src",
+      "python": "/Users/matteabusato/Desktop/SPOC Lab/venvs/assortative_partitions/bin/python",
+      "justMyCode": false
+    },
+    {
+      "name": "Debug old K3 assortative",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/deprecated/bp_3_assortative.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/deprecated",
+      "python": "/Users/matteabusato/Desktop/SPOC Lab/venvs/assortative_partitions/bin/python",
+      "justMyCode": false
+    }
+  ]
+}
