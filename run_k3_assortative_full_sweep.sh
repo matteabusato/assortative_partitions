@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --time=12:00:00
-#SBATCH --array=0-35%4
+#SBATCH --array=0-9
 #SBATCH --output=job_output/k3_ass_full_%A_%a.out
 #SBATCH --error=job_output/k3_ass_full_%A_%a.err
 #SBATCH --mail-type=END,FAIL

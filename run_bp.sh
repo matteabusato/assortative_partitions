@@ -21,4 +21,4 @@ source /home/busato/venvs/assortative_partitions/bin/activate
 export WANDB_DIR="${TMPDIR:-/tmp}/wandb_${SLURM_JOB_ID}"
 mkdir -p "$WANDB_DIR"
 
-srun --cpu-bind=cores python /home/busato/assortative_partitions/src/experiments/dis_k3/BP.py
+srun --cpu-bind=cores python /home/busato/assortative_partitions/src/BP.py

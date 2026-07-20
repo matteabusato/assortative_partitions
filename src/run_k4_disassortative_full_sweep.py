@@ -16,7 +16,7 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from population_dynamics_optimized import PopDyn
+from PopDyn import PopDyn
 
 
 CONFIGS: List[Dict[str, Any]] = [

@@ -1,3 +1,7 @@
+"""Population dynamics for H-(dis)assortative balanced K-partitions on
+random d-regular graphs."""
+
+
 from __future__ import annotations
 
 import os
@@ -58,6 +62,7 @@ class PopDyn:
         sampling_start_iter: int = 8_000,
         sampling_interval: int = 50,
         require_convergence_for_sampling: bool = True,
+        min_valid_fraction: float = 0.995,
 
         init_type: InitType = "hard_field",
         init_noise: float = 1e-6,
@@ -136,13 +141,13 @@ class PopDyn:
         self.observable_batch_size = int(observable_batch_size)
 
         if self.observable_batch_size <= 0:
-            raise ValueError(
-                "observable_batch_size must be strictly positive."
-            )
+            raise ValueError("observable_batch_size must be strictly positive.")
         self.min_observable_samples = int(min_observable_samples)
         self.sampling_start_iter = int(sampling_start_iter)
         self.sampling_interval = int(sampling_interval)
         self.require_convergence_for_sampling = bool(require_convergence_for_sampling)
+        self.min_valid_fraction = float(min_valid_fraction)
+        self.last_observables_valid = False
 
         self.init_type = init_type
         self.init_noise = float(init_noise)
@@ -166,28 +171,18 @@ class PopDyn:
             )
 
         if not (0.0 < self.almost_hard_field_mass < 1.0):
-            raise ValueError(
-                "almost_hard_field_mass must be strictly between 0 and 1."
-            )
+            raise ValueError("almost_hard_field_mass must be strictly between 0 and 1.")
 
         self.chi_RS = None if chi_RS is None else self._normalize_message(chi_RS)
         self.init_population = init_population
-        self.manual_init_chi = (
-            None if manual_init_chi is None else self._normalize_message(manual_init_chi)
-        )
+        self.manual_init_chi = (None if manual_init_chi is None else self._normalize_message(manual_init_chi))
 
         if self.init_type in ("rs_exact", "rs_perturb") and self.chi_RS is None:
-            raise ValueError(
-                f"init_type={self.init_type!r} requires chi_RS to be provided."
-            )
+            raise ValueError(f"init_type={self.init_type!r} requires chi_RS to be provided.")
         if self.init_type == "manual_population" and self.init_population is None:
-            raise ValueError(
-                "init_type='manual_population' requires init_population."
-            )
+            raise ValueError("init_type='manual_population' requires init_population.")
         if self.init_type == "manual_chi" and self.manual_init_chi is None:
-            raise ValueError(
-                "init_type='manual_chi' requires manual_init_chi."
-            )
+            raise ValueError("init_type='manual_chi' requires manual_init_chi.")
 
         self.impose_color_symmetry = bool(impose_color_symmetry)
 
@@ -228,9 +223,7 @@ class PopDyn:
         else:
             self.run_name = run_name
 
-        self.diagnostic_every = (
-            None if diagnostic_every is None else int(diagnostic_every)
-        )
+        self.diagnostic_every = (None if diagnostic_every is None else int(diagnostic_every))
         self.diagnostic_hist_bins = int(diagnostic_hist_bins)
         self.diagnostic_sample_size = int(diagnostic_sample_size)
         self.save_diagnostic_plots = bool(save_diagnostic_plots)
@@ -272,10 +265,8 @@ class PopDyn:
         self._mask_diag = self._constraint_mask_tensor(self._r_parent + 1)
         self._mask_offdiag = self._constraint_mask_tensor(self._r_parent)
         self._mask_node = self._constraint_mask_tensor(self._r_node)
-        self._field_message = torch.exp(-(
-            torch.as_tensor(self.mu, dtype=self.torch_dtype, device=self.device)[:, None]
-            + torch.as_tensor(self.mu, dtype=self.torch_dtype, device=self.device)[None, :]
-        ) / self.d)
+        self._field_message = torch.exp(-(torch.as_tensor(self.mu, dtype=self.torch_dtype, device=self.device)[:, None]
+            + torch.as_tensor(self.mu, dtype=self.torch_dtype, device=self.device)[None, :]) / self.d)
         self._field_node = torch.exp(-torch.as_tensor(self.mu, dtype=self.torch_dtype, device=self.device))
         self._has_message_field = bool(np.any(self.mu != 0.0))
         self._has_node_field = self._has_message_field
@@ -343,11 +334,6 @@ class PopDyn:
 
 
     def _normalize_message(self, chi: np.ndarray) -> np.ndarray:
-        """Return one non-negative, normalized message.
-
-        A non-finite or zero-mass input is replaced by the uniform K x K
-        message. This helper is used for initialization inputs.
-        """
         chi = np.asarray(chi, dtype=self.dtype)
         chi = np.where(np.isfinite(chi), chi, 0.0)
         chi = np.maximum(chi, 0.0)
@@ -949,18 +935,10 @@ class PopDyn:
         start_time = time.time()
 
         for _ in range(max_iter):
-            will_check_diff = (
-                check_convergence
-                and self.track_diff
-                and (self.iteration + 1) % self.convergence_check_every == 0
-            )
+            will_check_diff = (check_convergence and self.track_diff and (self.iteration + 1) % self.convergence_check_every == 0)
             self.step(snapshot_old=will_check_diff)
 
-            if (
-                check_convergence
-                and self.track_diff
-                and self.iteration % self.convergence_check_every == 0
-            ):
+            if (check_convergence and self.track_diff and self.iteration % self.convergence_check_every == 0):
                 self.last_diff = self.diff(n_bins=self.diff_n_bins)
 
                 if verbose >= 2:
@@ -974,14 +952,22 @@ class PopDyn:
                 if tol > 0.0 and self.last_diff < tol:
                     stable_checks += 1
                 else:
+                    # the population has left a previously detected stationary regime
+                    if stable:
+                        if verbose >= 1:
+                            print(
+                                f"Population lost stability at iter={self.iteration}. "
+                                "Discarding accumulated observable samples."
+                            )
+
+                        self._reset_observable_samples()
+
+                    stable = False
                     stable_checks = 0
 
                 if stable_checks >= stable_checks_required:
                     stable = True
-                    self.diagnostics.setdefault(
-                        "stabilized_iteration",
-                        self.iteration,
-                    )
+                    self.diagnostics["stabilized_iteration"] = self.iteration
 
                     if not sample_observables:
                         if verbose >= 1:
@@ -1005,7 +991,14 @@ class PopDyn:
 
             if can_sample:
                 self.update_observables(num_samples=num_samples)
-                self._record_current_observables()
+
+                if self.last_observables_valid:  # we compute observales conditional on numerically valid samples, the full observable sample is rejected if the valid fraction falls
+                    self._record_current_observables()
+                else:
+                    if verbose >= 2:
+                        print("Observable sample rejected: "
+                                f"node valid fraction={self.diagnostics['node_valid_fraction']:.6f}, "
+                                f"edge valid fraction={self.diagnostics['edge_valid_fraction']:.6f}")
 
                 if self.use_wandb:
                     self._log_wandb()
@@ -1147,38 +1140,24 @@ class PopDyn:
             for a, value in enumerate(self.rho_std):
                 data[f"rho_std/{a}"] = float(value)
 
+        if "last_observable_node_samples" in self.diagnostics:
+            data["observables/node_sample_count"] = (self.diagnostics["last_observable_node_samples"])
+
+        if "last_observable_edge_samples" in self.diagnostics:
+            data["observables/edge_sample_count"] = (self.diagnostics["last_observable_edge_samples"])
+
+        if "observable_batch_size" in self.diagnostics:
+            data["observables/batch_size"] = (self.diagnostics["observable_batch_size"])
+
+        data["observables/valid"] = int(self.last_observables_valid)
+        data["observables/node_valid_fraction"] = self.diagnostics.get("node_valid_fraction")
+        data["observables/edge_valid_fraction"] = self.diagnostics.get("edge_valid_fraction")
+
         if self.wandb_run is None:
             raise RuntimeError("wandb logging was requested, but no active wandb run exists.")
         self.wandb_run.log(data, step=self.iteration)
 
-        if "last_observable_node_samples" in self.diagnostics:
-            data["observables/node_sample_count"] = (
-                self.diagnostics[
-                    "last_observable_node_samples"
-                ]
-            )
-
-        if "last_observable_edge_samples" in self.diagnostics:
-            data["observables/edge_sample_count"] = (
-                self.diagnostics[
-                    "last_observable_edge_samples"
-                ]
-            )
-
-        if "observable_batch_size" in self.diagnostics:
-            data["observables/batch_size"] = (
-                self.diagnostics[
-                    "observable_batch_size"
-                ]
-            )
-
-
     def _save_and_log_final_plots(self) -> None:
-        """Create the same diagnostic plots as the NumPy implementation.
-
-        Population tensors are copied to CPU only here, after the simulation has
-        finished. Figures are optionally saved locally and uploaded to wandb.
-        """
         plot_dir = os.path.join(self.save_dir, self.run_name, "plots")
         if self.save_final_plots and self.save_locally:
             os.makedirs(plot_dir, exist_ok=True)
@@ -1305,6 +1284,8 @@ class PopDyn:
             total += torch.abs(new_hist - old_hist).sum()
         return float((total / self.M).item())
 
+
+
     def _node_partition_terms(self, node_messages: torch.Tensor):
         coeff = self._same_count_coefficients_torch(node_messages)
         color_weights = (coeff * self._mask_node).sum(dim=2)
@@ -1337,246 +1318,139 @@ class PopDyn:
         self,
         num_samples: Optional[int] = None,
     ) -> None:
-        node_num_samples, edge_num_samples = (
-            self._observable_sample_counts(num_samples)
-        )
-
+        node_num_samples, edge_num_samples = (self._observable_sample_counts(num_samples))
         batch_size = self.observable_batch_size
 
-        scalar_zero = torch.zeros(
-            (),
-            dtype=self.torch_dtype,
-            device=self.device,
-        )
-
-        # ---------------------------------------------------------
         # Node contributions
-        # ---------------------------------------------------------
-        node_power_sum = scalar_zero.clone()
-        node_power_log_sum = scalar_zero.clone()
-
-        rho_numerator_sum = torch.zeros(
-            self.K,
-            dtype=self.torch_dtype,
-            device=self.device,
-        )
-
         processed_node_samples = 0
+        valid_node_count = 0
+        total_node_count = 0
+        log_node_power_sum = torch.tensor(-torch.inf, dtype=self.torch_dtype, device=self.device,)
+        phi_node = torch.zeros((), dtype=self.torch_dtype, device=self.device,)  # node contribution to phi
+        rho_node = torch.zeros(self.K, dtype=self.torch_dtype, device=self.device,)  # node contribution to rho
 
         while processed_node_samples < node_num_samples:
-            current_batch = min(
-                batch_size,
-                node_num_samples - processed_node_samples,
-            )
+            current_batch = min(batch_size, node_num_samples - processed_node_samples)
 
-            node_indices = torch.randint(
-                low=0,
-                high=self.M,
-                size=(current_batch, self.d),
-                device=self.device,
-                generator=self.torch_generator,
-                dtype=torch.long,
-            )
+            node_indices = torch.randint(low=0, high=self.M, size=(current_batch, self.d), device=self.device, generator=self.torch_generator, dtype=torch.long)
+            node_messages = torch.index_select(self.population, dim=0, index=node_indices.reshape(-1)).reshape(current_batch, self.d, self.K, self.K)
 
-            node_messages = torch.index_select(
-                self.population,
-                dim=0,
-                index=node_indices.reshape(-1),
-            ).reshape(
-                current_batch,
-                self.d,
-                self.K,
-                self.K,
-            )
+            color_weights, Z_node = self._node_partition_terms(node_messages)
 
-            color_weights, Z_node = (
-                self._node_partition_terms(node_messages)
-            )
+            valid_node = torch.isfinite(Z_node) & (Z_node > 0.0)
+            logZ_valid = torch.log(Z_node[valid_node])
 
-            valid_node = (
-                torch.isfinite(Z_node)
-                & (Z_node > self.eps)
-            )
+            if logZ_valid.numel() > 0:
+                # phi node contribution for this batch:
+                batch_log_weights = self.mparisi * logZ_valid
+                batch_log_power_sum = torch.logsumexp(batch_log_weights, dim=0,)
+                batch_weights = torch.softmax(batch_log_weights, dim=0,)
+                batch_phi_node = torch.sum(batch_weights * logZ_valid)  
 
-            safe_Z_node = torch.where(
-                valid_node,
-                Z_node,
-                torch.ones_like(Z_node),
-            )
+                # rho contribution for this batch:
+                valid_color_weights = color_weights[valid_node]
+                valid_Z_node = Z_node[valid_node]
+                node_color_probabilities = (valid_color_weights / valid_Z_node[:, None])
+                batch_rho_node = torch.sum(batch_weights[:, None] * node_color_probabilities, dim=0,)
 
-            node_power = torch.where(
-                valid_node,
-                torch.pow(safe_Z_node, self.mparisi),
-                torch.zeros_like(Z_node),
-            )
+                # merge accumulators with previous batches
+                new_log_node_power_sum = torch.logaddexp(log_node_power_sum, batch_log_power_sum,)
 
-            node_log = torch.where(
-                valid_node,
-                torch.log(safe_Z_node),
-                torch.zeros_like(Z_node),
-            )
+                if torch.isneginf(log_node_power_sum):
+                    phi_node = batch_phi_node
+                    rho_node = batch_rho_node
+                else:
+                    old_weight = torch.exp(log_node_power_sum - new_log_node_power_sum)
+                    batch_weight = torch.exp(batch_log_power_sum - new_log_node_power_sum)
 
-            node_power_sum += node_power.sum()
-            node_power_log_sum += (
-                node_power * node_log
-            ).sum()
+                    phi_node = old_weight * phi_node + batch_weight * batch_phi_node
+                    rho_node = old_weight * rho_node + batch_weight * batch_rho_node
 
-            if self.mparisi == 0.0:
-                rho_weights = torch.where(
-                    valid_node,
-                    1.0 / safe_Z_node,
-                    torch.zeros_like(Z_node),
-                )
-            else:
-                rho_weights = torch.where(
-                    valid_node,
-                    torch.pow(
-                        safe_Z_node,
-                        self.mparisi - 1.0,
-                    ),
-                    torch.zeros_like(Z_node),
-                )
+                log_node_power_sum = new_log_node_power_sum
+                valid_node_count += logZ_valid.numel()
 
-            rho_numerator_sum += (
-                color_weights * rho_weights[:, None]
-            ).sum(dim=0)
-
+            total_node_count += current_batch
             processed_node_samples += current_batch
 
-        # ---------------------------------------------------------
-        # Edge contributions
-        # ---------------------------------------------------------
-        edge_power_sum = scalar_zero.clone()
-        edge_power_log_sum = scalar_zero.clone()
+        if valid_node_count > 0:
+            logZ_node_mean = (log_node_power_sum - math.log(valid_node_count))
+        else:
+            logZ_node_mean = torch.tensor(-torch.inf, dtype=self.torch_dtype, device=self.device,)
 
+        node_valid_fraction = valid_node_count / total_node_count
+        self.diagnostics["node_valid_fraction"] = node_valid_fraction
+
+        # Edge contributions
         processed_edge_samples = 0
+        valid_edge_count = 0
+        total_edge_count = 0
+        log_edge_power_sum = torch.tensor(-torch.inf, dtype=self.torch_dtype, device=self.device,)
+        phi_edge = torch.zeros((), dtype=self.torch_dtype, device=self.device,) 
+        # there is no rho edge contribution
 
         while processed_edge_samples < edge_num_samples:
-            current_batch = min(
-                batch_size,
-                edge_num_samples - processed_edge_samples,
-            )
+            current_batch = min(batch_size, edge_num_samples - processed_edge_samples,)
 
-            edge_indices = torch.randint(
-                low=0,
-                high=self.M,
-                size=(current_batch, 2),
-                device=self.device,
-                generator=self.torch_generator,
-                dtype=torch.long,
-            )
+            edge_indices = torch.randint(low=0, high=self.M, size=(current_batch, 2), device=self.device, generator=self.torch_generator, dtype=torch.long,)
+            msg_1 = torch.index_select(self.population, dim=0, index=edge_indices[:, 0],)
+            msg_2 = torch.index_select(self.population, dim=0, index=edge_indices[:, 1],)
 
-            msg_1 = torch.index_select(
-                self.population,
-                dim=0,
-                index=edge_indices[:, 0],
-            )
+            Z_edge = (msg_1 * msg_2.transpose(1, 2)).sum(dim=(1, 2))
 
-            msg_2 = torch.index_select(
-                self.population,
-                dim=0,
-                index=edge_indices[:, 1],
-            )
+            valid_edge = (torch.isfinite(Z_edge) & (Z_edge > 0.0))
+            logZ_edge_valid = torch.log(Z_edge[valid_edge])
 
-            Z_edge = (
-                msg_1 * msg_2.transpose(1, 2)
-            ).sum(dim=(1, 2))
+            if logZ_edge_valid.numel() > 0:
+                batch_log_weights = self.mparisi * logZ_edge_valid
+                batch_log_power_sum = torch.logsumexp(batch_log_weights, dim=0,)
+                batch_weights = torch.softmax(batch_log_weights,dim=0,)
 
-            valid_edge = (
-                torch.isfinite(Z_edge)
-                & (Z_edge > self.eps)
-            )
+                # phi edge contribution for this batch
+                batch_phi_edge = torch.sum(batch_weights * logZ_edge_valid)
 
-            safe_Z_edge = torch.where(
-                valid_edge,
-                Z_edge,
-                torch.ones_like(Z_edge),
-            )
+                # merge accumulators with previous batches
+                new_log_edge_power_sum = torch.logaddexp(log_edge_power_sum, batch_log_power_sum,)
 
-            edge_power = torch.where(
-                valid_edge,
-                torch.pow(safe_Z_edge, self.mparisi),
-                torch.zeros_like(Z_edge),
-            )
+                if torch.isneginf(log_edge_power_sum):
+                    phi_edge = batch_phi_edge
+                else:
+                    old_weight = torch.exp(log_edge_power_sum - new_log_edge_power_sum)
+                    batch_weight = torch.exp(batch_log_power_sum - new_log_edge_power_sum)
 
-            edge_log = torch.where(
-                valid_edge,
-                torch.log(safe_Z_edge),
-                torch.zeros_like(Z_edge),
-            )
+                    phi_edge = old_weight * phi_edge + batch_weight * batch_phi_edge
 
-            edge_power_sum += edge_power.sum()
-            edge_power_log_sum += (
-                edge_power * edge_log
-            ).sum()
+                log_edge_power_sum = new_log_edge_power_sum
+                valid_edge_count += logZ_edge_valid.numel()
 
+            total_edge_count += current_batch
             processed_edge_samples += current_batch
 
-        # ---------------------------------------------------------
-        # Convert accumulated sums into Monte Carlo means
-        # ---------------------------------------------------------
-        Z_node_mean = (
-            node_power_sum / node_num_samples
-        )
+        if valid_edge_count > 0:
+            logZ_edge_mean = log_edge_power_sum - math.log(valid_edge_count)
+        else:
+            logZ_edge_mean = torch.tensor(-torch.inf, dtype=self.torch_dtype, device=self.device,)
 
-        Z_edge_mean = (
-            edge_power_sum / edge_num_samples
-        )
+        edge_valid_fraction = valid_edge_count / total_edge_count
+        self.diagnostics["edge_valid_fraction"] = edge_valid_fraction
 
-        if (
-            not bool(torch.isfinite(Z_node_mean).item())
-            or not bool(torch.isfinite(Z_edge_mean).item())
-            or bool((Z_node_mean <= self.eps).item())
-            or bool((Z_edge_mean <= self.eps).item())
-        ):
-            self.psi = -np.inf
-            self.phi = np.nan
-            self.complexity = np.nan
-            self.rho = np.full(
-                self.K,
-                np.nan,
-                dtype=self.dtype,
-            )
-            self.s = np.nan
-
-            self.diagnostics[
-                "last_observable_node_samples"
-            ] = node_num_samples
-
-            self.diagnostics[
-                "last_observable_edge_samples"
-            ] = edge_num_samples
-
+        # check if there are enough non degenerate samples
+        self.last_observables_valid = (node_valid_fraction >= self.min_valid_fraction and edge_valid_fraction >= self.min_valid_fraction)
+        if not self.last_observables_valid: 
+            print("Last observables were not valid")
+            print(f"Valid fraction of nodes: {node_valid_fraction}")
+            print(f"Valid fraction of edges: {edge_valid_fraction}")
+            self.psi = None
+            self.phi = None
+            self.complexity = None
+            self.rho = None
+            self.s = None
             return
 
-        Z_node_log_mean = (
-            node_power_log_sum / node_num_samples
-        )
-
-        Z_edge_log_mean = (
-            edge_power_log_sum / edge_num_samples
-        )
-
-        psi = (
-            torch.log(Z_node_mean)
-            - 0.5 * self.d * torch.log(Z_edge_mean)
-        )
-
-        phi = (
-            Z_node_log_mean / Z_node_mean
-            - 0.5
-            * self.d
-            * Z_edge_log_mean
-            / Z_edge_mean
-        )
-
+        # compute Monte Carlo means from accumulators
+        psi = logZ_node_mean - 0.5 * self.d * logZ_edge_mean
+        phi = phi_node - 0.5 * self.d * phi_edge
         complexity = psi - self.mparisi * phi
-
-        rho_numerator_mean = (
-            rho_numerator_sum / node_num_samples
-        )
-
-        rho = rho_numerator_mean / Z_node_mean
+        rho = rho_node
 
         self.psi = float(psi.item())
         self.phi = float(phi.item())
@@ -1584,17 +1458,10 @@ class PopDyn:
         self.rho = rho.detach().cpu().numpy()
         self.s = self.phi
 
-        self.diagnostics[
-            "last_observable_node_samples"
-        ] = node_num_samples
+        self.diagnostics["last_observable_node_samples"] = node_num_samples
+        self.diagnostics["last_observable_edge_samples"] = edge_num_samples
+        self.diagnostics["observable_batch_size"] = batch_size
 
-        self.diagnostics[
-            "last_observable_edge_samples"
-        ] = edge_num_samples
-
-        self.diagnostics[
-            "observable_batch_size"
-        ] = batch_size
 
     def _population_numpy(self, old: bool = False) -> np.ndarray:
         pop = self.old_population if old else self.population

@@ -16,78 +16,173 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from population_dynamics_optimized import PopDyn
+from PopDyn import PopDyn
 
 
 CONFIGS: List[Dict[str, Any]] = [
-    # d = 3
-    {"d": 3, "H": 1, "expected_phase": "easy_RS"},
-    {"d": 3, "H": 2, "expected_phase": "easy_RS"},
-    {"d": 3, "H": 3, "expected_phase": "easy_RS"},
+    # # d = 3
+    # {"d": 3, "H": 1, "expected_phase": "easy_RS"},
+    # {"d": 3, "H": 2, "expected_phase": "easy_RS"},
+    # {"d": 3, "H": 3, "expected_phase": "easy_RS"},
 
-    # d = 4
-    {"d": 4, "H": 1, "expected_phase": "easy_RS"},
-    {"d": 4, "H": 2, "expected_phase": "easy_RS"},
-    {"d": 4, "H": 3, "expected_phase": "easy_RS"},
-    {"d": 4, "H": 4, "expected_phase": "easy_RS"},
+    # # d = 4
+    # {"d": 4, "H": 1, "expected_phase": "easy_RS"},
+    # {"d": 4, "H": 2, "expected_phase": "easy_RS"},
+    # {"d": 4, "H": 3, "expected_phase": "easy_RS"},
+    # {"d": 4, "H": 4, "expected_phase": "easy_RS"},
 
-    # d = 5
-    {"d": 5, "H": 1, "expected_phase": "easy_RS"},
-    {"d": 5, "H": 2, "expected_phase": "easy_RS"},
-    {"d": 5, "H": 3, "expected_phase": "easy_RS"},
-    {"d": 5, "H": 4, "expected_phase": "easy_RS"},
-    {"d": 5, "H": 5, "expected_phase": "easy_RS"},
+    # # d = 5
+    # {"d": 5, "H": 1, "expected_phase": "easy_RS"},
+    # {"d": 5, "H": 2, "expected_phase": "easy_RS"},
+    # {"d": 5, "H": 3, "expected_phase": "easy_RS"},
+    # {"d": 5, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 5, "H": 5, "expected_phase": "easy_RS"},
 
-    # d = 6
-    {"d": 6, "H": 2, "expected_phase": "easy_RS"},
-    {"d": 6, "H": 3, "expected_phase": "easy_RS"},
-    {"d": 6, "H": 4, "expected_phase": "easy_RS"},
-    {"d": 6, "H": 5, "expected_phase": "easy_RS"},
-    {"d": 6, "H": 6, "expected_phase": "easy_RS"},
+    # # d = 6
+    # {"d": 6, "H": 2, "expected_phase": "easy_RS"},
+    # {"d": 6, "H": 3, "expected_phase": "easy_RS"},
+    # {"d": 6, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 6, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 6, "H": 6, "expected_phase": "easy_RS"},
 
-    # d = 7
-    {"d": 7, "H": 2, "expected_phase": "easy_RS"},
-    {"d": 7, "H": 3, "expected_phase": "easy_RS"},
-    {"d": 7, "H": 4, "expected_phase": "easy_RS"},
-    {"d": 7, "H": 5, "expected_phase": "easy_RS"},
-    {"d": 7, "H": 6, "expected_phase": "easy_RS"},
-    {"d": 7, "H": 7, "expected_phase": "easy_RS"},
+    # # d = 7
+    # {"d": 7, "H": 2, "expected_phase": "easy_RS"},
+    # {"d": 7, "H": 3, "expected_phase": "easy_RS"},
+    # {"d": 7, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 7, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 7, "H": 6, "expected_phase": "easy_RS"},
+    # {"d": 7, "H": 7, "expected_phase": "easy_RS"},
 
-    # d = 8
-    {"d": 8, "H": 2, "expected_phase": "frozen_1RSB"},
-    {"d": 8, "H": 3, "expected_phase": "easy_RS"},
-    {"d": 8, "H": 4, "expected_phase": "easy_RS"},
-    {"d": 8, "H": 5, "expected_phase": "easy_RS"},
-    {"d": 8, "H": 6, "expected_phase": "easy_RS"},
-    {"d": 8, "H": 7, "expected_phase": "easy_RS"},
+    # # d = 8
+    # {"d": 8, "H": 2, "expected_phase": "frozen_1RSB"},
+    # {"d": 8, "H": 3, "expected_phase": "easy_RS"},
+    # {"d": 8, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 8, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 8, "H": 6, "expected_phase": "easy_RS"},
+    # {"d": 8, "H": 7, "expected_phase": "easy_RS"},
+    # {"d": 8, "H": 8, "expected_phase": "easy_RS"},
 
-    # d = 9
-    {"d": 9, "H": 3, "expected_phase": "easy_RS"},
-    {"d": 9, "H": 4, "expected_phase": "easy_RS"},
-    {"d": 9, "H": 5, "expected_phase": "easy_RS"},
-    {"d": 9, "H": 6, "expected_phase": "easy_RS"},
-    {"d": 9, "H": 7, "expected_phase": "easy_RS"},
+    # # d = 9
+    # {"d": 9, "H": 3, "expected_phase": "easy_RS"},
+    # {"d": 9, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 9, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 9, "H": 6, "expected_phase": "easy_RS"},
+    # {"d": 9, "H": 7, "expected_phase": "easy_RS"},
+    # {"d": 9, "H": 8, "expected_phase": "easy_RS"},
+    # {"d": 9, "H": 9, "expected_phase": "easy_RS"},
 
-    # d = 10
-    {"d": 10, "H": 3, "expected_phase": "easy_RS"},
-    {"d": 10, "H": 4, "expected_phase": "easy_RS"},
-    {"d": 10, "H": 5, "expected_phase": "easy_RS"},
-    {"d": 10, "H": 6, "expected_phase": "easy_RS"},
-    {"d": 10, "H": 7, "expected_phase": "easy_RS"},
+    # # d = 10
+    # {"d": 10, "H": 3, "expected_phase": "easy_RS"},
+    # {"d": 10, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 10, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 10, "H": 6, "expected_phase": "easy_RS"},
+    # {"d": 10, "H": 7, "expected_phase": "easy_RS"},
+    # {"d": 10, "H": 8, "expected_phase": "easy_RS"},
+    # {"d": 10, "H": 9, "expected_phase": "easy_RS"},
+    # {"d": 10, "H": 10, "expected_phase": "easy_RS"},
 
-    # d = 11
-    {"d": 11, "H": 3, "expected_phase": "frozen_1RSB"},
-    {"d": 11, "H": 4, "expected_phase": "easy_RS"},
-    {"d": 11, "H": 5, "expected_phase": "easy_RS"},
-    {"d": 11, "H": 6, "expected_phase": "easy_RS"},
-    {"d": 11, "H": 7, "expected_phase": "easy_RS"},
+    # # d = 11
+    # {"d": 11, "H": 3, "expected_phase": "frozen_1RSB"},
+    # {"d": 11, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 11, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 11, "H": 6, "expected_phase": "easy_RS"},
+    # {"d": 11, "H": 7, "expected_phase": "easy_RS"},
+    # {"d": 11, "H": 8, "expected_phase": "easy_RS"},
+    # {"d": 11, "H": 9, "expected_phase": "easy_RS"},
+    # {"d": 11, "H": 10, "expected_phase": "easy_RS"},
+    # {"d": 11, "H": 11, "expected_phase": "easy_RS"},
 
-    # d = 12
-    {"d": 12, "H": 3, "expected_phase": "frozen_1RSB"},
-    {"d": 12, "H": 4, "expected_phase": "easy_RS"},
-    {"d": 12, "H": 5, "expected_phase": "easy_RS"},
-    {"d": 12, "H": 6, "expected_phase": "easy_RS"},
-    {"d": 12, "H": 7, "expected_phase": "easy_RS"},
+    # # d = 12
+    # {"d": 12, "H": 3, "expected_phase": "frozen_1RSB"},
+    # {"d": 12, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 12, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 12, "H": 6, "expected_phase": "easy_RS"},
+    # {"d": 12, "H": 7, "expected_phase": "easy_RS"},
+    # {"d": 12, "H": 8, "expected_phase": "easy_RS"},
+    # {"d": 12, "H": 9, "expected_phase": "easy_RS"},
+    # {"d": 12, "H": 10, "expected_phase": "easy_RS"},
+    # {"d": 12, "H": 11, "expected_phase": "easy_RS"},
+
+    # # d = 13
+    # {"d": 13, "H": 3, "expected_phase": "UNSAT"},
+    # {"d": 13, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 13, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 13, "H": 6, "expected_phase": "easy_RS"},
+    # {"d": 13, "H": 7, "expected_phase": "easy_RS"},
+    # {"d": 13, "H": 8, "expected_phase": "easy_RS"},
+    # {"d": 13, "H": 9, "expected_phase": "easy_RS"},
+    # {"d": 13, "H": 10, "expected_phase": "easy_RS"},
+    # {"d": 13, "H": 11, "expected_phase": "easy_RS"},
+
+    # # d = 14
+    # {"d": 14, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 14, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 14, "H": 6, "expected_phase": "easy_RS"},
+    # {"d": 14, "H": 7, "expected_phase": "easy_RS"},
+    # {"d": 14, "H": 8, "expected_phase": "easy_RS"},
+    # {"d": 14, "H": 9, "expected_phase": "easy_RS"},
+    # {"d": 14, "H": 10, "expected_phase": "easy_RS"},
+    # {"d": 14, "H": 11, "expected_phase": "easy_RS"},
+
+    # # d = 15
+    # {"d": 15, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 15, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 15, "H": 6, "expected_phase": "easy_RS"},
+    # {"d": 15, "H": 7, "expected_phase": "easy_RS"},
+    # {"d": 15, "H": 8, "expected_phase": "easy_RS"},
+    # {"d": 15, "H": 9, "expected_phase": "easy_RS"},
+    # {"d": 15, "H": 10, "expected_phase": "easy_RS"},
+    # {"d": 15, "H": 11, "expected_phase": "easy_RS"},
+
+    # d = 16
+    {"d": 16, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 16, "H": 5, "expected_phase": "easy_RS"},
+    {"d": 16, "H": 6, "expected_phase": "easy_RS"},
+    {"d": 16, "H": 7, "expected_phase": "easy_RS"},
+    {"d": 16, "H": 8, "expected_phase": "easy_RS"},
+    {"d": 16, "H": 9, "expected_phase": "easy_RS"},
+    {"d": 16, "H": 10, "expected_phase": "easy_RS"},
+    {"d": 16, "H": 11, "expected_phase": "easy_RS"},
+
+    # d = 17
+    {"d": 17, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 17, "H": 5, "expected_phase": "easy_RS"},
+    {"d": 17, "H": 6, "expected_phase": "easy_RS"},
+    {"d": 17, "H": 7, "expected_phase": "easy_RS"},
+    {"d": 17, "H": 8, "expected_phase": "easy_RS"},
+    {"d": 17, "H": 9, "expected_phase": "easy_RS"},
+    {"d": 17, "H": 10, "expected_phase": "easy_RS"},
+    {"d": 17, "H": 11, "expected_phase": "easy_RS"},
+
+    # d = 18
+    {"d": 18, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 18, "H": 5, "expected_phase": "easy_RS"},
+    {"d": 18, "H": 6, "expected_phase": "easy_RS"},
+    {"d": 18, "H": 7, "expected_phase": "easy_RS"},
+    {"d": 18, "H": 8, "expected_phase": "easy_RS"},
+    {"d": 18, "H": 9, "expected_phase": "easy_RS"},
+    {"d": 18, "H": 10, "expected_phase": "easy_RS"},
+    {"d": 18, "H": 11, "expected_phase": "easy_RS"},
+
+    # d = 19
+    {"d": 19, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 19, "H": 5, "expected_phase": "easy_RS"},
+    {"d": 19, "H": 6, "expected_phase": "easy_RS"},
+    {"d": 19, "H": 7, "expected_phase": "easy_RS"},
+    {"d": 19, "H": 8, "expected_phase": "easy_RS"},
+    {"d": 19, "H": 9, "expected_phase": "easy_RS"},
+    {"d": 19, "H": 10, "expected_phase": "easy_RS"},
+    {"d": 19, "H": 11, "expected_phase": "easy_RS"},
+
+    # d = 20
+    {"d": 20, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 20, "H": 5, "expected_phase": "easy_RS"},
+    {"d": 20, "H": 6, "expected_phase": "easy_RS"},
+    {"d": 20, "H": 7, "expected_phase": "easy_RS"},
+    {"d": 20, "H": 8, "expected_phase": "easy_RS"},
+    {"d": 20, "H": 9, "expected_phase": "easy_RS"},
+    {"d": 20, "H": 10, "expected_phase": "easy_RS"},
+    {"d": 20, "H": 11, "expected_phase": "easy_RS"},
 ]
 
 

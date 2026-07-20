@@ -26,7 +26,6 @@ except ImportError:
 
 @dataclass
 class BPConfig:
-    """Full configuration for a BP run."""
     # physical
     K: int
     d: int
@@ -130,7 +129,6 @@ class BPConfig:
 
 @dataclass
 class BPResult:
-    """All outputs of a BP run."""
     chi: np.ndarray
     mu: np.ndarray
     m_actual: np.ndarray
@@ -636,52 +634,3 @@ class BeliefPropagation:
 
 def run_bp(config: BPConfig, verbose: int = 0) -> BPResult:
     return BeliefPropagation(config).run(verbose=verbose)
-
-
-if __name__ == '__main__':
-    problem_type = 'assortative'
-    K = 3
-    Ds = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    Hs = [[1, 2, 3], [1, 2, 3], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6, 7], [1, 2, 3, 4, 5, 6, 7], [1, 2, 3, 4, 5, 6, 7, 8]]
-    N_RUNS = 3
-
-    # K = 4
-    # Ds = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    # Hs = [[1, 2], [1, 2], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]]
-    # N_RUNS = 3
-
-    # K = 5
-    # Ds = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    # Hs = [[1, 2], [1, 2], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]]
-    # N_RUNS = 3
-
-    # K = 6
-    # Ds = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    # Hs = [[1, 2], [1, 2], [1, 2], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3, 4]]
-    # N_RUNS = 3
-
-    for run_id in range(N_RUNS):
-        for i, D in enumerate(Ds):
-            for H in Hs[i]:
-                SEED = np.random.randint(0, 1000000)
-                np.random.seed(SEED)
-
-                cfg = BPConfig(
-                    K=K, d=D, H=H,
-                    problem_type=problem_type,
-                    m_target=np.array([1.0 / K] * K),
-                    max_iter=20_000_000,
-                    threshold=1e-21,
-                    damping=0.01,
-                    init_type='almost_unif_std10',
-                    mu_mode='previous',
-                    seed=SEED,
-                    log_every=1000,
-                    use_wandb=True,
-                    wandb_project='bp_fixed_point',
-                    wandb_group='SAVE',
-                    wandb_name=f'{problem_type[:3]}_K{K}_D{D}_H{H}_run{run_id}',
-                    save_locally=True,
-                    save_dir='results/bp',
-                )
-                res = run_bp(cfg)
