@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --time=12:00:00
-#SBATCH --array=0-39%4
+#SBATCH --array=0-6
 #SBATCH --output=job_output/k3_dis_full_%A_%a.out
 #SBATCH --error=job_output/k3_dis_full_%A_%a.err
 #SBATCH --mail-type=END,FAIL
@@ -43,6 +43,12 @@ export PD_CONVERGENCE_CHECK_EVERY="${PD_CONVERGENCE_CHECK_EVERY:-200}"
 export PD_STABLE_CHECKS="${PD_STABLE_CHECKS:-5}"
 export PD_INIT_TYPE="${PD_INIT_TYPE:-hard_field}"
 
+# Numerical-health controls.
+export PD_MIN_VALID_FRACTION="${PD_MIN_VALID_FRACTION:-0.995}"
+export PD_MAX_DISCARDED_MESSAGE_FRACTION="${PD_MAX_DISCARDED_MESSAGE_FRACTION:-1.0}"
+export PD_IMPLOSION_CHECK_START="${PD_IMPLOSION_CHECK_START:-5000}"
+export PD_MIN_VALID_CANDIDATES_FOR_UPDATE="${PD_MIN_VALID_CANDIDATES_FOR_UPDATE:-100}"
+
 # Observable sampling.
 # With M=1,000,000 and PD_OBS_FACTOR=10, each observable round uses
 # 10,000,000 population-message draws, processed in GPU batches.
@@ -57,6 +63,7 @@ export PD_REQUIRE_CONVERGENCE_FOR_SAMPLING="${PD_REQUIRE_CONVERGENCE_FOR_SAMPLIN
 # Define it explicitly only to override the upsampling rule.
 
 # Optional intermediate diagnostics. Disabled by default for the full sweep.
+export PD_DIAGNOSTIC_EVERY="${PD_DIAGNOSTIC_EVERY:-500}"
 export PD_SAVE_DIAGNOSTIC_PLOTS="${PD_SAVE_DIAGNOSTIC_PLOTS:-false}"
 export PD_DIAGNOSTIC_HIST_BINS="${PD_DIAGNOSTIC_HIST_BINS:-80}"
 export PD_DIAGNOSTIC_SAMPLE_SIZE="${PD_DIAGNOSTIC_SAMPLE_SIZE:-100000}"

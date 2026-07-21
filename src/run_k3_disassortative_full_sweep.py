@@ -134,48 +134,48 @@ CONFIGS: List[Dict[str, Any]] = [
     # {"d": 15, "H": 10, "expected_phase": "easy_RS"},
     # {"d": 15, "H": 11, "expected_phase": "easy_RS"},
 
-    # d = 16
-    {"d": 16, "H": 4, "expected_phase": "easy_RS"},
-    {"d": 16, "H": 5, "expected_phase": "easy_RS"},
-    {"d": 16, "H": 6, "expected_phase": "easy_RS"},
-    {"d": 16, "H": 7, "expected_phase": "easy_RS"},
-    {"d": 16, "H": 8, "expected_phase": "easy_RS"},
-    {"d": 16, "H": 9, "expected_phase": "easy_RS"},
-    {"d": 16, "H": 10, "expected_phase": "easy_RS"},
-    {"d": 16, "H": 11, "expected_phase": "easy_RS"},
+    # # d = 16
+    # {"d": 16, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 16, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 16, "H": 6, "expected_phase": "easy_RS"},
+    # {"d": 16, "H": 7, "expected_phase": "easy_RS"},
+    # {"d": 16, "H": 8, "expected_phase": "easy_RS"},
+    # {"d": 16, "H": 9, "expected_phase": "easy_RS"},
+    # {"d": 16, "H": 10, "expected_phase": "easy_RS"},
+    # {"d": 16, "H": 11, "expected_phase": "easy_RS"},
 
-    # d = 17
-    {"d": 17, "H": 4, "expected_phase": "easy_RS"},
-    {"d": 17, "H": 5, "expected_phase": "easy_RS"},
-    {"d": 17, "H": 6, "expected_phase": "easy_RS"},
-    {"d": 17, "H": 7, "expected_phase": "easy_RS"},
-    {"d": 17, "H": 8, "expected_phase": "easy_RS"},
-    {"d": 17, "H": 9, "expected_phase": "easy_RS"},
-    {"d": 17, "H": 10, "expected_phase": "easy_RS"},
-    {"d": 17, "H": 11, "expected_phase": "easy_RS"},
+    # # d = 17
+    # {"d": 17, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 17, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 17, "H": 6, "expected_phase": "easy_RS"},
+    # {"d": 17, "H": 7, "expected_phase": "easy_RS"},
+    # {"d": 17, "H": 8, "expected_phase": "easy_RS"},
+    # {"d": 17, "H": 9, "expected_phase": "easy_RS"},
+    # {"d": 17, "H": 10, "expected_phase": "easy_RS"},
+    # {"d": 17, "H": 11, "expected_phase": "easy_RS"},
 
-    # d = 18
-    {"d": 18, "H": 4, "expected_phase": "easy_RS"},
-    {"d": 18, "H": 5, "expected_phase": "easy_RS"},
-    {"d": 18, "H": 6, "expected_phase": "easy_RS"},
-    {"d": 18, "H": 7, "expected_phase": "easy_RS"},
-    {"d": 18, "H": 8, "expected_phase": "easy_RS"},
-    {"d": 18, "H": 9, "expected_phase": "easy_RS"},
-    {"d": 18, "H": 10, "expected_phase": "easy_RS"},
-    {"d": 18, "H": 11, "expected_phase": "easy_RS"},
+    # # d = 18
+    # {"d": 18, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 18, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 18, "H": 6, "expected_phase": "easy_RS"},
+    # {"d": 18, "H": 7, "expected_phase": "easy_RS"},
+    # {"d": 18, "H": 8, "expected_phase": "easy_RS"},
+    # {"d": 18, "H": 9, "expected_phase": "easy_RS"},
+    # {"d": 18, "H": 10, "expected_phase": "easy_RS"},
+    # {"d": 18, "H": 11, "expected_phase": "easy_RS"},
 
-    # d = 19
-    {"d": 19, "H": 4, "expected_phase": "easy_RS"},
-    {"d": 19, "H": 5, "expected_phase": "easy_RS"},
-    {"d": 19, "H": 6, "expected_phase": "easy_RS"},
-    {"d": 19, "H": 7, "expected_phase": "easy_RS"},
-    {"d": 19, "H": 8, "expected_phase": "easy_RS"},
-    {"d": 19, "H": 9, "expected_phase": "easy_RS"},
-    {"d": 19, "H": 10, "expected_phase": "easy_RS"},
-    {"d": 19, "H": 11, "expected_phase": "easy_RS"},
+    # # d = 19
+    # {"d": 19, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 19, "H": 5, "expected_phase": "easy_RS"},
+    # {"d": 19, "H": 6, "expected_phase": "easy_RS"},
+    # {"d": 19, "H": 7, "expected_phase": "easy_RS"},
+    # {"d": 19, "H": 8, "expected_phase": "easy_RS"},
+    # {"d": 19, "H": 9, "expected_phase": "easy_RS"},
+    # {"d": 19, "H": 10, "expected_phase": "easy_RS"},
+    # {"d": 19, "H": 11, "expected_phase": "easy_RS"},
 
     # d = 20
-    {"d": 20, "H": 4, "expected_phase": "easy_RS"},
+    # {"d": 20, "H": 4, "expected_phase": "easy_RS"},
     {"d": 20, "H": 5, "expected_phase": "easy_RS"},
     {"d": 20, "H": 6, "expected_phase": "easy_RS"},
     {"d": 20, "H": 7, "expected_phase": "easy_RS"},
@@ -280,6 +280,25 @@ def main() -> None:
         "PD_REQUIRE_CONVERGENCE_FOR_SAMPLING",
         True,
     )
+    min_valid_fraction = env_float(
+        "PD_MIN_VALID_FRACTION",
+        0.995,
+    )
+
+    max_discarded_message_fraction = env_float(
+        "PD_MAX_DISCARDED_MESSAGE_FRACTION",
+        1.0,
+    )
+
+    implosion_check_start_iter = env_int(
+        "PD_IMPLOSION_CHECK_START",
+        5_000,
+    )
+
+    min_valid_candidates_for_update = env_int(
+        "PD_MIN_VALID_CANDIDATES_FOR_UPDATE",
+        100,
+    )
 
     diagnostic_every = env_optional_int("PD_DIAGNOSTIC_EVERY")
     diagnostic_hist_bins = env_int("PD_DIAGNOSTIC_HIST_BINS", 80)
@@ -313,6 +332,21 @@ def main() -> None:
     if torch.cuda.is_available():
         print(f"GPU: {torch.cuda.get_device_name(0)}", flush=True)
 
+    print(
+        f"PD_INIT_TYPE environment variable: "
+        f"{os.environ.get('PD_INIT_TYPE')}",
+        flush=True,
+    )
+    print(
+        f"Resolved init_type: {init_type!r}",
+        flush=True,
+    )
+    print(
+        f"PopDyn imported from: "
+        f"{sys.modules[PopDyn.__module__].__file__}",
+        flush=True,
+    )
+
     pd = PopDyn(
         K=K,
         d=d,
@@ -334,6 +368,10 @@ def main() -> None:
         sampling_start_iter=sampling_start_iter,
         sampling_interval=sampling_interval,
         require_convergence_for_sampling=require_convergence_for_sampling,
+        min_valid_fraction=min_valid_fraction,
+        max_discarded_message_fraction=max_discarded_message_fraction,
+        implosion_check_start_iter=implosion_check_start_iter,
+        min_valid_candidates_for_update=min_valid_candidates_for_update,
         init_type=init_type,
         impose_color_symmetry=True,
         seed=seed,
@@ -372,6 +410,15 @@ def main() -> None:
         verbose=2,
         finish_wandb=True,
     )
+
+    if pd.imploded:
+        run_status = "imploded"
+    elif pd.psi_mean is None:
+        run_status = "no_valid_observables"
+    elif not pd.diagnostics.get("stable", False):
+        run_status = "not_converged"
+    else:
+        run_status = "completed"
 
     health = pd.population_health()
 
@@ -426,6 +473,58 @@ def main() -> None:
             "last_observable_edge_samples"
         ),
         "observable_batch_size": pd.diagnostics.get("observable_batch_size"),
+        "run_status": run_status,
+        "imploded": bool(pd.imploded),
+        "implosion_iteration": pd.implosion_iteration,
+        "implosion_reason": pd.diagnostics.get("implosion_reason"),
+        "implosion_discarded_fraction": pd.diagnostics.get(
+            "implosion_discarded_fraction"
+        ),
+
+        "successful_updates": int(pd.successful_updates),
+        "consecutive_no_valid_updates": int(
+            pd.consecutive_no_valid_updates
+        ),
+
+        "last_candidate_count": pd.diagnostics.get(
+            "last_candidate_count"
+        ),
+        "last_valid_candidate_count": pd.diagnostics.get(
+            "last_valid_candidate_count"
+        ),
+        "last_discarded_candidate_count": pd.diagnostics.get(
+            "last_discarded_candidate_count"
+        ),
+        "last_discarded_candidate_fraction": pd.diagnostics.get(
+            "last_discarded_candidate_fraction"
+        ),
+        "total_generated_candidates": pd.diagnostics.get(
+            "total_generated_candidates"
+        ),
+        "total_discarded_candidates": pd.diagnostics.get(
+            "total_discarded_candidates"
+        ),
+
+        "node_valid_fraction": pd.diagnostics.get(
+            "node_valid_fraction"
+        ),
+        "edge_valid_fraction": pd.diagnostics.get(
+            "edge_valid_fraction"
+        ),
+        "last_observables_valid": bool(
+            pd.last_observables_valid
+        ),
+
+        "min_valid_fraction": min_valid_fraction,
+        "max_discarded_message_fraction": (
+            max_discarded_message_fraction
+        ),
+        "implosion_check_start_iter": (
+            implosion_check_start_iter
+        ),
+        "min_valid_candidates_for_update": (
+            min_valid_candidates_for_update
+        ),
     }
 
     print(pd, flush=True)

@@ -20,111 +20,111 @@ from PopDyn import PopDyn
 
 
 CONFIGS: List[Dict[str, Any]] = [
-    # # d = 3
-    # {"d": 3, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 3, "H": 2, "expected_phase": "easy_RS"},
+    # d = 3
+    {"d": 3, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 3, "H": 2, "expected_phase": "easy_RS"},
 
-    # # d = 4
-    # {"d": 4, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 4, "H": 2, "expected_phase": "easy_RS"},
+    # d = 4
+    {"d": 4, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 4, "H": 2, "expected_phase": "easy_RS"},
 
-    # # d = 5
-    # {"d": 5, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 5, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 5, "H": 3, "expected_phase": "frozen_1RSB"},
+    # d = 5
+    {"d": 5, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 5, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 5, "H": 3, "expected_phase": "frozen_1RSB"},
 
-    # # d = 6
-    # {"d": 6, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 6, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 6, "H": 3, "expected_phase": "easy_RS"},
+    # d = 6
+    {"d": 6, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 6, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 6, "H": 3, "expected_phase": "easy_RS"},
 
-    # # d = 7
-    # {"d": 7, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 7, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 7, "H": 3, "expected_phase": "easy_RS"},
+    # d = 7
+    {"d": 7, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 7, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 7, "H": 3, "expected_phase": "easy_RS"},
 
-    # # d = 8
-    # {"d": 8, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 8, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 8, "H": 3, "expected_phase": "easy_RS"},
-    # {"d": 8, "H": 4, "expected_phase": "frozen_1RSB"},
+    # d = 8
+    {"d": 8, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 8, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 8, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 8, "H": 4, "expected_phase": "frozen_1RSB"},
 
-    # # d = 9
-    # {"d": 9, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 9, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 9, "H": 3, "expected_phase": "easy_RS"},
-    # {"d": 9, "H": 4, "expected_phase": "frozen_1RSB"},
+    # d = 9
+    {"d": 9, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 9, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 9, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 9, "H": 4, "expected_phase": "frozen_1RSB"},
 
-    # # d = 10
-    # {"d": 10, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 10, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 10, "H": 3, "expected_phase": "easy_RS"},
-    # {"d": 10, "H": 4, "expected_phase": "easy_RS"},
+    # d = 10
+    {"d": 10, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 10, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 10, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 10, "H": 4, "expected_phase": "easy_RS"},
 
-    # # d = 11
-    # {"d": 11, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 11, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 11, "H": 3, "expected_phase": "easy_RS"},
-    # {"d": 11, "H": 4, "expected_phase": "easy_RS"},
+    # d = 11
+    {"d": 11, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 11, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 11, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 11, "H": 4, "expected_phase": "easy_RS"},
 
-    # # d = 12
-    # {"d": 12, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 12, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 12, "H": 3, "expected_phase": "easy_RS"},
-    # {"d": 12, "H": 4, "expected_phase": "easy_RS"},
-    # {"d": 12, "H": 5, "expected_phase": "UNSAT"},
+    # d = 12
+    {"d": 12, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 12, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 12, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 12, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 12, "H": 5, "expected_phase": "UNSAT"},
 
-    # # d = 13
-    # {"d": 13, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 13, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 13, "H": 3, "expected_phase": "easy_RS"},
-    # {"d": 13, "H": 4, "expected_phase": "easy_RS"},
-    # {"d": 13, "H": 5, "expected_phase": "unclear"},
-    # {"d": 13, "H": 6, "expected_phase": "UNSAT"},
+    # d = 13
+    {"d": 13, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 13, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 13, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 13, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 13, "H": 5, "expected_phase": "unclear"},
+    {"d": 13, "H": 6, "expected_phase": "UNSAT"},
 
-    # # d = 14
-    # {"d": 14, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 14, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 14, "H": 3, "expected_phase": "easy_RS"},
-    # {"d": 14, "H": 4, "expected_phase": "easy_RS"},
-    # {"d": 14, "H": 5, "expected_phase": "unclear"},
-    # {"d": 14, "H": 6, "expected_phase": "UNSAT"},
+    # d = 14
+    {"d": 14, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 14, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 14, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 14, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 14, "H": 5, "expected_phase": "unclear"},
+    {"d": 14, "H": 6, "expected_phase": "UNSAT"},
 
-    # # d = 15
-    # {"d": 15, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 15, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 15, "H": 3, "expected_phase": "easy_RS"},
-    # {"d": 15, "H": 4, "expected_phase": "easy_RS"},
-    # {"d": 15, "H": 5, "expected_phase": "unclear"},
-    # {"d": 15, "H": 6, "expected_phase": "UNSAT"},
-    # {"d": 15, "H": 7, "expected_phase": "unclear"},
+    # d = 15
+    {"d": 15, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 15, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 15, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 15, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 15, "H": 5, "expected_phase": "unclear"},
+    {"d": 15, "H": 6, "expected_phase": "UNSAT"},
+    {"d": 15, "H": 7, "expected_phase": "unclear"},
 
-    # # d = 16
-    # {"d": 16, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 16, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 16, "H": 3, "expected_phase": "easy_RS"},
-    # {"d": 16, "H": 4, "expected_phase": "easy_RS"},
-    # {"d": 16, "H": 5, "expected_phase": "unclear"},
-    # {"d": 16, "H": 6, "expected_phase": "unclear"},
-    # {"d": 16, "H": 7, "expected_phase": "unclear"},
+    # d = 16
+    {"d": 16, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 16, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 16, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 16, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 16, "H": 5, "expected_phase": "unclear"},
+    {"d": 16, "H": 6, "expected_phase": "unclear"},
+    {"d": 16, "H": 7, "expected_phase": "unclear"},
 
-    # # d = 17
-    # {"d": 17, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 17, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 17, "H": 3, "expected_phase": "easy_RS"},
-    # {"d": 17, "H": 4, "expected_phase": "easy_RS"},
-    # {"d": 17, "H": 5, "expected_phase": "unclear"},
-    # {"d": 17, "H": 6, "expected_phase": "unclear"},
-    # {"d": 17, "H": 7, "expected_phase": "unclear"},
+    # d = 17
+    {"d": 17, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 17, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 17, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 17, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 17, "H": 5, "expected_phase": "unclear"},
+    {"d": 17, "H": 6, "expected_phase": "unclear"},
+    {"d": 17, "H": 7, "expected_phase": "unclear"},
 
-    # # d = 18
-    # {"d": 18, "H": 1, "expected_phase": "easy_RS"},
-    # {"d": 18, "H": 2, "expected_phase": "easy_RS"},
-    # {"d": 18, "H": 3, "expected_phase": "easy_RS"},
-    # {"d": 18, "H": 4, "expected_phase": "easy_RS"},
-    # {"d": 18, "H": 5, "expected_phase": "unclear"},
-    # {"d": 18, "H": 6, "expected_phase": "unclear"},
-    # {"d": 18, "H": 7, "expected_phase": "unclear"},
+    # d = 18
+    {"d": 18, "H": 1, "expected_phase": "easy_RS"},
+    {"d": 18, "H": 2, "expected_phase": "easy_RS"},
+    {"d": 18, "H": 3, "expected_phase": "easy_RS"},
+    {"d": 18, "H": 4, "expected_phase": "easy_RS"},
+    {"d": 18, "H": 5, "expected_phase": "unclear"},
+    {"d": 18, "H": 6, "expected_phase": "unclear"},
+    {"d": 18, "H": 7, "expected_phase": "unclear"},
 ]
 
 
@@ -243,6 +243,21 @@ def main() -> None:
         f"_m{mparisi:g}_M{M}_seed{seed}"
     )
 
+    min_valid_fraction = env_float(
+        "PD_MIN_VALID_FRACTION",
+        0.995,
+    )
+
+    max_discarded_message_fraction = env_float(
+        "PD_MAX_DISCARDED_MESSAGE_FRACTION",
+        0.05,
+    )
+
+    implosion_check_start_iter = env_int(
+        "PD_IMPLOSION_CHECK_START",
+        500,
+    )
+
     print(f"Array task: {config_index}", flush=True)
     print(
         f"Running configuration {config_index + 1}/{len(CONFIGS)}: {cfg}",
@@ -254,6 +269,10 @@ def main() -> None:
     print(f"CUDA available: {torch.cuda.is_available()}", flush=True)
     if torch.cuda.is_available():
         print(f"GPU: {torch.cuda.get_device_name(0)}", flush=True)
+
+    print(f"PD_INIT_TYPE environment variable: {os.environ.get('PD_INIT_TYPE')}", flush=True)
+    print(f"Resolved init_type: {init_type!r}", flush=True)
+    print(f"PopDyn imported from: {sys.modules[PopDyn.__module__].__file__}", flush=True)
 
     pd = PopDyn(
         K=K,
@@ -276,6 +295,9 @@ def main() -> None:
         sampling_start_iter=sampling_start_iter,
         sampling_interval=sampling_interval,
         require_convergence_for_sampling=require_convergence_for_sampling,
+        min_valid_fraction=min_valid_fraction,
+        max_discarded_message_fraction=max_discarded_message_fraction,
+        implosion_check_start_iter=implosion_check_start_iter,
         init_type=init_type,
         impose_color_symmetry=True,
         seed=seed,
@@ -315,6 +337,16 @@ def main() -> None:
         finish_wandb=True,
     )
 
+    run_status = ""
+    if pd.imploded:
+        run_status = "imploded"
+    elif pd.psi_mean is None:
+        run_status = "no_valid_observables"
+    elif not pd.diagnostics.get("stable", False):
+        run_status = "not_converged"
+    else:
+        run_status = "completed"
+
     health = pd.population_health()
 
     mean_message = pd.population.mean(dim=0).detach().cpu().numpy()
@@ -331,9 +363,13 @@ def main() -> None:
         "M": M,
         "seed": seed,
         "init_type": init_type,
+        "run_status": run_status,
         "iteration": int(pd.iteration),
         "last_diff": None if pd.last_diff is None else float(pd.last_diff),
         "num_observable_samples": len(pd.psi_samples),
+        "min_valid_fraction": min_valid_fraction,
+        "max_discarded_message_fraction": max_discarded_message_fraction,
+        "implosion_check_start_iter": implosion_check_start_iter,
         "psi_mean": pd.psi_mean,
         "psi_std": pd.psi_std,
         "phi_mean": pd.phi_mean,
@@ -368,6 +404,30 @@ def main() -> None:
             "last_observable_edge_samples"
         ),
         "observable_batch_size": pd.diagnostics.get("observable_batch_size"),
+        "imploded": bool(pd.imploded),
+        "implosion_iteration": pd.implosion_iteration,
+        "implosion_reason": pd.diagnostics.get("implosion_reason"),
+        "implosion_discarded_fraction": pd.diagnostics.get(
+            "implosion_discarded_fraction"
+        ),
+        "last_discarded_candidate_fraction": pd.diagnostics.get(
+            "last_discarded_candidate_fraction"
+        ),
+        "total_discarded_candidates": pd.diagnostics.get(
+            "total_discarded_candidates"
+        ),
+        "total_generated_candidates": pd.diagnostics.get(
+            "total_generated_candidates"
+        ),
+        "node_valid_fraction": pd.diagnostics.get(
+        "node_valid_fraction"
+        ),
+        "edge_valid_fraction": pd.diagnostics.get(
+            "edge_valid_fraction"
+        ),
+        "last_observables_valid": bool(
+            pd.last_observables_valid
+        ),
     }
 
     print(pd, flush=True)

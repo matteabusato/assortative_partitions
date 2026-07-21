@@ -63,6 +63,7 @@ CONFIGS: List[Dict[str, Any]] = [
     {"d": 8, "H": 5, "expected_phase": "easy_RS"},
     {"d": 8, "H": 6, "expected_phase": "easy_RS"},
     {"d": 8, "H": 7, "expected_phase": "easy_RS"},
+    {"d": 8, "H": 8, "expected_phase": "easy_RS"},
 
     # d = 9
     {"d": 9, "H": 1, "expected_phase": "easy_RS"},
@@ -72,6 +73,8 @@ CONFIGS: List[Dict[str, Any]] = [
     {"d": 9, "H": 5, "expected_phase": "easy_RS"},
     {"d": 9, "H": 6, "expected_phase": "easy_RS"},
     {"d": 9, "H": 7, "expected_phase": "easy_RS"},
+    {"d": 9, "H": 8, "expected_phase": "easy_RS"},
+    {"d": 9, "H": 9, "expected_phase": "easy_RS"},
 
     # d = 10
     {"d": 10, "H": 2, "expected_phase": "easy_RS"},
@@ -80,6 +83,9 @@ CONFIGS: List[Dict[str, Any]] = [
     {"d": 10, "H": 5, "expected_phase": "easy_RS"},
     {"d": 10, "H": 6, "expected_phase": "easy_RS"},
     {"d": 10, "H": 7, "expected_phase": "easy_RS"},
+    {"d": 10, "H": 8, "expected_phase": "easy_RS"},
+    {"d": 10, "H": 9, "expected_phase": "easy_RS"},
+    {"d": 10, "H": 10, "expected_phase": "easy_RS"},
 
     # d = 11
     {"d": 11, "H": 2, "expected_phase": "easy_RS"},
@@ -88,6 +94,10 @@ CONFIGS: List[Dict[str, Any]] = [
     {"d": 11, "H": 5, "expected_phase": "easy_RS"},
     {"d": 11, "H": 6, "expected_phase": "easy_RS"},
     {"d": 11, "H": 7, "expected_phase": "easy_RS"},
+    {"d": 11, "H": 8, "expected_phase": "easy_RS"},
+    {"d": 11, "H": 9, "expected_phase": "easy_RS"},
+    {"d": 11, "H": 10, "expected_phase": "easy_RS"},
+    {"d": 11, "H": 11, "expected_phase": "easy_RS"},
 
     # d = 12
     {"d": 12, "H": 2, "expected_phase": "easy_RS"},
@@ -96,6 +106,10 @@ CONFIGS: List[Dict[str, Any]] = [
     {"d": 12, "H": 5, "expected_phase": "easy_RS"},
     {"d": 12, "H": 6, "expected_phase": "easy_RS"},
     {"d": 12, "H": 7, "expected_phase": "easy_RS"},
+    {"d": 12, "H": 8, "expected_phase": "easy_RS"},
+    {"d": 12, "H": 9, "expected_phase": "easy_RS"},
+    {"d": 12, "H": 10, "expected_phase": "easy_RS"},
+    {"d": 12, "H": 11, "expected_phase": "easy_RS"},
 ]
 
 

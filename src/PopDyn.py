@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import time
+import math
 from typing import Any, Dict, List, Literal, Optional, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,7 +28,6 @@ InitType = Literal[
     "rs_exact",
     "rs_perturb",
     "hard_field",
-    "almost_hard_field",
     "almost_uniform",
     "gaussian",
     "manual_population",
@@ -62,11 +62,13 @@ class PopDyn:
         sampling_start_iter: int = 8_000,
         sampling_interval: int = 50,
         require_convergence_for_sampling: bool = True,
-        min_valid_fraction: float = 0.995,
+        min_valid_fraction: float = 0.995,  # validity of Monte Carlo samples used for observables
+        max_discarded_message_fraction: float = 0.05,  # health of the actual pop-dyn update
+        implosion_check_start_iter: int = 500,
+        min_valid_candidates_for_update: int = 100,
 
         init_type: InitType = "hard_field",
         init_noise: float = 1e-6,
-        almost_hard_field_mass: float = 1.0 - 1e-6,
         chi_RS: Optional[np.ndarray] = None,
         init_population: Optional[np.ndarray] = None,
         manual_init_chi: Optional[np.ndarray] = None,
@@ -148,16 +150,21 @@ class PopDyn:
         self.require_convergence_for_sampling = bool(require_convergence_for_sampling)
         self.min_valid_fraction = float(min_valid_fraction)
         self.last_observables_valid = False
+        self.max_discarded_message_fraction = float(max_discarded_message_fraction)
+        self.consecutive_no_valid_updates = 0
+        self.successful_updates = 0
+        self.min_valid_candidates_for_update = int(min_valid_candidates_for_update)
+
+        if not 0.0 <= self.max_discarded_message_fraction <= 1.0:
+            raise ValueError("max_discarded_message_fraction must be between 0 and 1.")
 
         self.init_type = init_type
         self.init_noise = float(init_noise)
-        self.almost_hard_field_mass = float(almost_hard_field_mass)
 
         valid_init_types = {
             "rs_exact",
             "rs_perturb",
             "hard_field",
-            "almost_hard_field",
             "almost_uniform",
             "gaussian",
             "manual_population",
@@ -169,9 +176,6 @@ class PopDyn:
                 f"Unknown init_type={self.init_type!r}. "
                 f"Valid options are {sorted(valid_init_types)}."
             )
-
-        if not (0.0 < self.almost_hard_field_mass < 1.0):
-            raise ValueError("almost_hard_field_mass must be strictly between 0 and 1.")
 
         self.chi_RS = None if chi_RS is None else self._normalize_message(chi_RS)
         self.init_population = init_population
@@ -249,8 +253,94 @@ class PopDyn:
             raise ValueError("diagnostic_sample_size must be positive.")
 
         initial_population = self._initialize_population()
-        self.population = torch.as_tensor(initial_population, dtype=self.torch_dtype, device=self.device)
+
+        print(
+            "[initialization] "
+            f"init_type={self.init_type}, "
+            f"shape={initial_population.shape}, "
+            f"numpy_dtype={initial_population.dtype}, "
+            f"torch_dtype={self.torch_dtype}, "
+            f"device={self.device}",
+            flush=True,
+        )
+
+        numpy_finite = np.isfinite(initial_population)
+
+        if not np.all(numpy_finite):
+            nan_count = int(np.isnan(initial_population).sum())
+            posinf_count = int(np.isposinf(initial_population).sum())
+            neginf_count = int(np.isneginf(initial_population).sum())
+
+            raise RuntimeError(
+                "Initial NumPy population contains non-finite values: "
+                f"init_type={self.init_type}, "
+                f"nan={nan_count}, "
+                f"+inf={posinf_count}, "
+                f"-inf={neginf_count}"
+            )
+
+        if self.init_type == "hard_field":
+            valid_components = (
+                (initial_population == 0.0)
+                | (initial_population == 1.0)
+            )
+
+            if not np.all(valid_components):
+                invalid_count = int((~valid_components).sum())
+
+                raise RuntimeError(
+                    "Hard-field initialization contains values other than 0 and 1: "
+                    f"invalid_components={invalid_count}"
+                )
+
+            numpy_mass = initial_population.sum(axis=(1, 2))
+
+            if not np.all(numpy_mass == 1.0):
+                bad_messages = int((numpy_mass != 1.0).sum())
+
+                raise RuntimeError(
+                    "Hard-field initialization contains non-one-hot messages: "
+                    f"bad_messages={bad_messages}, "
+                    f"mass_min={numpy_mass.min()}, "
+                    f"mass_max={numpy_mass.max()}"
+                )
+
+        # Force an owned contiguous array before transferring it.
+        initial_population = np.ascontiguousarray(initial_population).copy()
+
+        self.population = torch.from_numpy(initial_population).to(
+            device=self.device,
+            dtype=self.torch_dtype,
+        )
+
         self.old_population = self.population.clone()
+
+        torch_finite = torch.isfinite(self.population)
+
+        if not bool(torch_finite.all().item()):
+            nan_count = int(torch.isnan(self.population).sum().item())
+            posinf_count = int(torch.isposinf(self.population).sum().item())
+            neginf_count = int(torch.isneginf(self.population).sum().item())
+
+            raise RuntimeError(
+                "Population became non-finite after conversion to PyTorch: "
+                f"init_type={self.init_type}, "
+                f"device={self.device}, "
+                f"nan={nan_count}, "
+                f"+inf={posinf_count}, "
+                f"-inf={neginf_count}"
+            )
+
+        initial_mass = self.population.sum(dim=(1, 2))
+        initial_max_error = torch.abs(initial_mass - 1.0).max()
+
+        if float(initial_max_error.item()) > 1e-12:
+            raise RuntimeError(
+                "Initial population is not normalized: "
+                f"mass_min={initial_mass.min().item():.16g}, "
+                f"mass_max={initial_mass.max().item():.16g}, "
+                f"max_error={initial_max_error.item():.3e}"
+            )
 
         if self.population.shape != (self.M, self.K, self.K):
             raise RuntimeError(
@@ -272,6 +362,9 @@ class PopDyn:
         self._has_node_field = self._has_message_field
 
         self.no_update = False
+        self.imploded = False
+        self.implosion_iteration: Optional[int] = None
+        self.implosion_check_start_iter = int(implosion_check_start_iter)
 
         self.last_diff: Optional[float] = None
         self.iteration = 0
@@ -333,226 +426,6 @@ class PopDyn:
             self._init_wandb()
 
 
-    def _normalize_message(self, chi: np.ndarray) -> np.ndarray:
-        chi = np.asarray(chi, dtype=self.dtype)
-        chi = np.where(np.isfinite(chi), chi, 0.0)
-        chi = np.maximum(chi, 0.0)
-
-        mass = float(chi.sum())
-        if not np.isfinite(mass) or mass <= self.eps:
-            return np.full(
-                self.message_shape,
-                1.0 / (self.K * self.K),
-                dtype=self.dtype,
-            )
-
-        return chi / mass
-
-    @torch.inference_mode()
-    def _normalize_messages_torch(
-        self,
-        messages: torch.Tensor,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Normalize a batch of K x K messages independently.
-
-        Non-finite, negative, or zero-mass messages are replaced by the
-        uniform message. The returned Boolean mask identifies replacements.
-        """
-        if messages.ndim != 3 or messages.shape[1:] != self.message_shape:
-            raise ValueError(
-                "Expected messages with shape "
-                f"(B, {self.K}, {self.K}), got {tuple(messages.shape)}."
-            )
-
-        finite_messages = torch.isfinite(messages).all(dim=(1, 2))
-        cleaned = torch.where(
-            torch.isfinite(messages),
-            messages,
-            torch.zeros_like(messages),
-        ).clamp_min(0.0)
-
-        mass = cleaned.sum(dim=(1, 2), keepdim=True)
-        scalar_mass = mass[:, 0, 0]
-        bad = (
-            ~finite_messages
-            | ~torch.isfinite(scalar_mass)
-            | (scalar_mass <= self.torch_eps)
-        )
-
-        normalized = cleaned / mass.clamp_min(self.torch_eps)
-        uniform = torch.full_like(
-            normalized,
-            1.0 / (self.K * self.K),
-        )
-        normalized = torch.where(
-            bad[:, None, None],
-            uniform,
-            normalized,
-        )
-
-        return normalized, bad
-
-    def _normalize_population(self, pop: np.ndarray) -> np.ndarray:
-        """Normalize every message in a NumPy population independently."""
-        pop = np.asarray(pop, dtype=self.dtype)
-
-        if pop.shape != self.population_shape:
-            raise ValueError(
-                f"Population must have shape {self.population_shape}, "
-                f"got {pop.shape}."
-            )
-
-        pop = np.where(np.isfinite(pop), pop, 0.0)
-        pop = np.maximum(pop, 0.0)
-
-        mass = pop.sum(axis=(1, 2), keepdims=True)
-        bad = (
-            ~np.isfinite(mass[:, 0, 0])
-            | (mass[:, 0, 0] <= self.eps)
-        )
-
-        if np.any(bad):
-            pop[bad] = 1.0 / (self.K * self.K)
-            mass = pop.sum(axis=(1, 2), keepdims=True)
-
-        return pop / mass
-
-
-    def _initialize_population(self) -> np.ndarray:
-        if self.init_type == "manual_population":
-            return self._normalize_population(self.init_population)
-
-        if self.init_type == "manual_chi":
-            pop = np.repeat(self.manual_init_chi[None, :, :], self.M, axis=0)
-            return self._normalize_population(pop)
-
-        if self.init_type == "rs_exact":
-            pop = np.repeat(self.chi_RS[None, :, :], self.M, axis=0)
-            return self._normalize_population(pop)
-
-        if self.init_type == "rs_perturb":
-            pop = np.repeat(self.chi_RS[None, :, :], self.M, axis=0)
-            noise = self.rng.normal(
-                loc=0.0,
-                scale=self.init_noise,
-                size=self.population_shape,
-            )
-            pop = pop + noise
-            return self._normalize_population(pop)
-
-        if self.init_type == "almost_hard_field":
-            high = self.almost_hard_field_mass
-            low = (1.0 - high) / (self.K * self.K - 1)
-
-            pop = np.full(
-                self.population_shape,
-                low,
-                dtype=self.dtype,
-            )
-
-            flat_indices = self.rng.integers(
-                low=0,
-                high=self.K * self.K,
-                size=self.M,
-            )
-
-            rows = flat_indices // self.K
-            cols = flat_indices % self.K
-
-            pop[np.arange(self.M), rows, cols] = high
-            return pop
-        
-        if self.init_type == "hard_field":
-            pop = np.zeros(self.population_shape, dtype=self.dtype)
-
-            flat_indices = self.rng.integers(
-                low=0,
-                high=self.K * self.K,
-                size=self.M,
-            )
-
-            rows = flat_indices // self.K
-            cols = flat_indices % self.K
-
-            pop[np.arange(self.M), rows, cols] = 1.0
-            return pop
-
-        if self.init_type == "almost_uniform":
-            pop = np.full(
-                self.population_shape,
-                1.0 / (self.K * self.K),
-                dtype=self.dtype,
-            )
-            noise = self.rng.normal(
-                loc=0.0,
-                scale=self.init_noise,
-                size=self.population_shape,
-            )
-            pop = pop + noise
-            return self._normalize_population(pop)
-
-        if self.init_type == "gaussian":
-            pop = self.rng.normal(
-                loc=1.0,
-                scale=max(self.init_noise, 1e-3),
-                size=self.population_shape,
-            )
-            return self._normalize_population(pop)
-
-
-    def _init_wandb(self) -> None:
-        config = {
-            "K": self.K,
-            "d": self.d,
-            "H": self.H,
-            "problem_type": self.problem_type,
-            "target_density": self.target_density.tolist(),
-            "mparisi": self.mparisi,
-            "mu": self.mu.tolist(),
-            "M": self.M,
-            "damping": self.damping,
-            "num_updated": self.num_updated,
-            "max_iter": self.max_iter,
-            "tol": self.tol,
-            "convergence_check_every": self.convergence_check_every,
-            "num_samples": self.num_samples,
-            "observable_upsampling_factor": self.observable_upsampling_factor,
-            "observable_batch_size": self.observable_batch_size,
-            "min_observable_samples": self.min_observable_samples,
-            "sampling_start_iter": self.sampling_start_iter,
-            "sampling_interval": self.sampling_interval,
-            "require_convergence_for_sampling": self.require_convergence_for_sampling,
-            "init_type": self.init_type,
-            "init_noise": self.init_noise,
-            "almost_hard_field_mass": self.almost_hard_field_mass,
-            "impose_color_symmetry": self.impose_color_symmetry,
-            "seed": self.seed,
-            "device": str(self.device),
-            "torch_dtype": str(self.torch_dtype),
-            "wandb_log_plots": self.wandb_log_plots,
-            "save_final_plots": self.save_final_plots,
-            "final_plot_bins": self.final_plot_bins,
-            "diagnostic_every": self.diagnostic_every,
-            "diagnostic_hist_bins": self.diagnostic_hist_bins,
-            "diagnostic_sample_size": self.diagnostic_sample_size,
-            "save_diagnostic_plots": self.save_diagnostic_plots,
-            **self.wandb_config_extra,
-        }
-
-        self.wandb_run = wandb.init(
-            project=self.wandb_project,
-            group=self.wandb_group,
-            name=self.wandb_name or self.run_name,
-            config=config,
-            reinit="finish_previous",
-        )
-
-        if self.wandb_run is None:
-            raise RuntimeError(
-                "wandb.init() did not create a run. Check WANDB_MODE, authentication, "
-                "and network access from the compute node."
-            )
-
     def __repr__(self) -> str:
         lines = [
             "PopDyn",
@@ -587,16 +460,8 @@ class PopDyn:
             ])
 
             if self.rho_mean is not None:
-                rho_str = np.array2string(
-                    self.rho_mean,
-                    precision=5,
-                    suppress_small=True,
-                )
-                rho_std_str = np.array2string(
-                    self.rho_std,
-                    precision=2,
-                    suppress_small=True,
-                )
+                rho_str = np.array2string(self.rho_mean, precision=5, suppress_small=True,)
+                rho_std_str = np.array2string(self.rho_std, precision=2, suppress_small=True,)
                 lines.append(f"  rho mean       : {rho_str}")
                 lines.append(f"  rho std        : {rho_std_str}")
 
@@ -611,17 +476,118 @@ class PopDyn:
             ])
 
             if self.rho is not None:
-                rho_str = np.array2string(
-                    self.rho,
-                    precision=5,
-                    suppress_small=True,
-                )
+                rho_str = np.array2string(self.rho, precision=5, suppress_small=True,)
                 lines.append(f"  rho            : {rho_str}")
 
         return "\n".join(lines)
+
+    # -----------------------------------------------------------
+    # HELPER FUNCTIONS
+    # -----------------------------------------------------------
+
+    def _normalize_message(self, chi: np.ndarray) -> np.ndarray:
+        chi = np.asarray(chi, dtype=self.dtype)
+        chi = np.where(np.isfinite(chi), chi, 0.0)
+        chi = np.maximum(chi, 0.0)
+
+        mass = float(chi.sum())
+        if not np.isfinite(mass) or mass <= self.eps:
+            return np.full(self.message_shape, 1.0 / (self.K * self.K), dtype=self.dtype,)
+
+        return chi / mass
+
+
+    @torch.inference_mode()
+    def _normalize_messages_torch(
+        self,
+        messages: torch.Tensor,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        if messages.ndim != 3 or messages.shape[1:] != self.message_shape:
+            raise ValueError(
+                "Expected messages with shape "
+                f"(B, {self.K}, {self.K}), got {tuple(messages.shape)}."
+            )
+
+        finite_messages = torch.isfinite(messages).all(dim=(1, 2))
+        cleaned = torch.where(torch.isfinite(messages), messages,torch.zeros_like(messages),).clamp_min(0.0)
+
+        mass = cleaned.sum(dim=(1, 2), keepdim=True)
+        scalar_mass = mass[:, 0, 0]
+        bad = (~finite_messages | ~torch.isfinite(scalar_mass) | (scalar_mass <= self.torch_eps))
+
+        normalized = cleaned / mass.clamp_min(self.torch_eps)
+        uniform = torch.full_like(normalized, 1.0 / (self.K * self.K),)
+        normalized = torch.where(bad[:, None, None], uniform, normalized,)
+
+        return normalized, bad
+
+
+    def _normalize_population(self, pop: np.ndarray) -> np.ndarray:
+        pop = np.asarray(pop, dtype=self.dtype)
+
+        if pop.shape != self.population_shape:
+            raise ValueError(
+                f"Population must have shape {self.population_shape}, "
+                f"got {pop.shape}."
+            )
+
+        pop = np.where(np.isfinite(pop), pop, 0.0)
+        pop = np.maximum(pop, 0.0)
+
+        mass = pop.sum(axis=(1, 2), keepdims=True)
+        bad = (~np.isfinite(mass[:, 0, 0]) | (mass[:, 0, 0] <= self.eps))
+
+        if np.any(bad):
+            pop[bad] = 1.0 / (self.K * self.K)
+            mass = pop.sum(axis=(1, 2), keepdims=True)
+
+        return pop / mass
+
+    # -----------------------------------------------------------
+    # INITIALIZE POPULATION
+    # -----------------------------------------------------------
+
+    def _initialize_population(self) -> np.ndarray:
+        if self.init_type == "manual_population":
+            return self._normalize_population(self.init_population)
+
+        if self.init_type == "manual_chi":
+            pop = np.repeat(self.manual_init_chi[None, :, :], self.M, axis=0)
+            return self._normalize_population(pop)
+
+        if self.init_type == "rs_exact":
+            pop = np.repeat(self.chi_RS[None, :, :], self.M, axis=0)
+            return self._normalize_population(pop)
+
+        if self.init_type == "rs_perturb":
+            pop = np.repeat(self.chi_RS[None, :, :], self.M, axis=0)
+            noise = self.rng.normal(loc=0.0, scale=self.init_noise, size=self.population_shape,)
+            pop = pop + noise
+            return self._normalize_population(pop)
+        
+        if self.init_type == "hard_field":
+            pop = np.zeros(self.population_shape, dtype=self.dtype)
+
+            flat_indices = self.rng.integers(low=0, high=self.K * self.K, size=self.M,)
+
+            rows = flat_indices // self.K
+            cols = flat_indices % self.K
+
+            pop[np.arange(self.M), rows, cols] = 1.0
+            return pop
+
+        if self.init_type == "almost_uniform":
+            pop = np.full(self.population_shape, 1.0 / (self.K * self.K), dtype=self.dtype,)
+            noise = self.rng.normal(loc=0.0, scale=self.init_noise, size=self.population_shape,)
+            pop = pop + noise
+            return self._normalize_population(pop)
+
+        if self.init_type == "gaussian":
+            pop = self.rng.normal(loc=1.0, scale=max(self.init_noise, 1e-3), size=self.population_shape,)
+            return self._normalize_population(pop)
     
     #=============================================================================================================================
-    # Running the population dynamics
+    # POPULATION DYNAMICS RUN
     #=============================================================================================================================
 
     def _constraint_mask_from_same_count(self, same_count):
@@ -629,15 +595,18 @@ class PopDyn:
             return same_count >= self.H
         return same_count < self.H
 
+
     def _constraint_mask_tensor(self, same_count: torch.Tensor) -> torch.Tensor:
         if self.problem_type == "assortative":
             return same_count >= self.H
         return same_count < self.H
 
+
     def _constraint_satisfied(self, x: int, y: int, parent_colors: np.ndarray) -> bool:
         parent_colors = np.asarray(parent_colors)
         same_count = int(x == y) + np.count_nonzero(parent_colors == x)
         return bool(self._constraint_mask_from_same_count(same_count))
+
 
     def _same_count_coefficients_torch(self, parent_messages: torch.Tensor) -> torch.Tensor:
         B, P = parent_messages.shape[:2]
@@ -657,9 +626,11 @@ class PopDyn:
             coeff = next_coeff
         return coeff
 
+
     def _same_count_coefficients(self, parent_messages):
         tensor = torch.as_tensor(parent_messages, dtype=self.torch_dtype, device=self.device)
         return self._same_count_coefficients_torch(tensor)
+
 
     def _candidate_messages_torch(self, parent_messages: torch.Tensor):
         coeff = self._same_count_coefficients_torch(parent_messages)
@@ -672,18 +643,18 @@ class PopDyn:
             candidates.mul_(self._field_message)
         return candidates, candidates.sum(dim=(1, 2))
 
+
     def _candidate_messages(self, parent_messages):
         tensor = torch.as_tensor(parent_messages, dtype=self.torch_dtype, device=self.device)
         return self._candidate_messages_torch(tensor)
+
 
     def _randomly_permute_colors_torch(
         self,
         messages: torch.Tensor,
     ) -> torch.Tensor:
         if messages.ndim != 3:
-            raise ValueError(
-                f"Expected messages of shape (B, K, K), got {messages.shape}"
-            )
+            raise ValueError(f"Expected messages of shape (B, K, K), got {messages.shape}")
 
         B, K1, K2 = messages.shape
 
@@ -693,120 +664,61 @@ class PopDyn:
                 f"got ({K1}, {K2})"
             )
 
-        # Generate valid permutations on CPU.
+        # generate valid permutations on CPU
         random_values = self.rng.random((B, self.K))
         perms_np = np.argsort(random_values, axis=1).astype(np.int64)
 
-        perms = torch.from_numpy(perms_np).to(
-            device=self.device,
-            dtype=torch.long,
-        )
+        perms = torch.from_numpy(perms_np).to(device=self.device, dtype=torch.long,)
 
-        permutation_matrices = torch.nn.functional.one_hot(
-            perms,
-            num_classes=self.K,
-        ).to(dtype=messages.dtype)
+        permutation_matrices = torch.nn.functional.one_hot(perms, num_classes=self.K,).to(dtype=messages.dtype)
 
-        # chi'[x,y] = chi[perm[x], perm[y]]
-        return torch.bmm(
-            torch.bmm(permutation_matrices, messages),
-            permutation_matrices.transpose(1, 2),
-        )
+        return torch.bmm(torch.bmm(permutation_matrices, messages), permutation_matrices.transpose(1, 2),)
+
 
     def _randomly_permute_colors(self, messages):
         tensor = torch.as_tensor(messages, dtype=self.torch_dtype, device=self.device)
         return self._randomly_permute_colors_torch(tensor)
-
-    @torch.inference_mode()
-    def population_health(self) -> Dict[str, Any]:
-        pop = self.population
-
-        finite_mask = torch.isfinite(pop)
-        message_mass = pop.sum(dim=(1, 2))
-
-        finite_messages = finite_mask.all(dim=(1, 2))
-        zero_messages = message_mass <= self.torch_eps
-
-        mean_message = pop.mean(dim=0)
-
-        stats = {
-            "iteration": int(self.iteration),
-            "population_min": float(torch.nan_to_num(pop).min().item()),
-            "population_max": float(torch.nan_to_num(pop).max().item()),
-            "mean_message": mean_message.detach().cpu().numpy(),
-            "mean_message_sum": float(mean_message.sum().item()),
-            "mass_min": float(torch.nan_to_num(message_mass).min().item()),
-            "mass_max": float(torch.nan_to_num(message_mass).max().item()),
-            "mass_mean": float(torch.nan_to_num(message_mass).mean().item()),
-            "mass_std": float(torch.nan_to_num(message_mass).std().item()),
-            "max_normalization_error": float(
-                torch.nan_to_num(torch.abs(message_mass - 1.0)).max().item()
-            ),
-            "nonfinite_message_fraction": float(
-                (~finite_messages).to(self.torch_dtype).mean().item()
-            ),
-            "zero_message_fraction": float(
-                zero_messages.to(self.torch_dtype).mean().item()
-            ),
-            "zero_component_fraction": float(
-                (pop <= self.torch_eps).to(self.torch_dtype).mean().item()
-            ),
-        }
-
-        return stats
+    
 
     @torch.inference_mode()
     def step(self, snapshot_old: bool = True) -> None:
-        """Perform one population-dynamics update.
-
-        Invalid zero-partition candidates are excluded from the 1RSB
-        resampling measure. If no valid candidate exists, the population is
-        left unchanged for this iteration. Valid selected candidates are
-        normalized independently before insertion.
-        """
         if snapshot_old:
             self.old_population.copy_(self.population)
 
         if self.num_parents == 0:
-            parent_messages = torch.empty(
-                (self.num_updated, 0, self.K, self.K),
-                dtype=self.torch_dtype,
-                device=self.device,
-            )
+            parent_messages = torch.empty((self.num_updated, 0, self.K, self.K), dtype=self.torch_dtype,device=self.device,)
         else:
-            parent_indices = torch.randint(
-                low=0,
-                high=self.M,
-                size=(self.num_updated, self.num_parents),
-                device=self.device,
-                generator=self.torch_generator,
-                dtype=torch.long,
-            )
-            parent_messages = torch.index_select(
-                self.population,
-                dim=0,
-                index=parent_indices.reshape(-1),
-            ).reshape(
-                self.num_updated,
-                self.num_parents,
-                self.K,
-                self.K,
-            )
+            parent_indices = torch.randint(low=0, high=self.M, size=(self.num_updated, self.num_parents), device=self.device, generator=self.torch_generator, dtype=torch.long,)
+            parent_messages = torch.index_select(self.population, dim=0, index=parent_indices.reshape(-1),).reshape(self.num_updated, self.num_parents, self.K, self.K,)
 
-        candidates, candidate_mass = self._candidate_messages_torch(
-            parent_messages
-        )
+        should_record = (self.diagnostic_every is not None and self.diagnostic_every > 0 and (self.iteration + 1) % self.diagnostic_every == 0)
+
+        candidates, candidate_mass = self._candidate_messages_torch(parent_messages)
         finite_mass = torch.isfinite(candidate_mass)
-        valid = finite_mass & (candidate_mass > self.torch_eps)
-        valid_indices = torch.nonzero(valid, as_tuple=False).flatten()
+        valid = (finite_mass & (candidate_mass > self.torch_eps))
 
-        should_record = (
-            self.diagnostic_every is not None
-            and self.diagnostic_every > 0
-            and (self.iteration + 1) % self.diagnostic_every == 0
-        )
+        num_candidates = candidate_mass.numel()
+        num_valid = int(valid.sum().item())
+        num_discarded = num_candidates - num_valid
 
-        if valid_indices.numel() == 0:
+        discarded_fraction = (num_discarded / num_candidates if num_candidates > 0 else 1.0)
+
+        self.diagnostics["last_candidate_count"] = num_candidates
+        self.diagnostics["last_valid_candidate_count"] = num_valid
+        self.diagnostics["last_discarded_candidate_count"] = num_discarded
+        self.diagnostics["last_discarded_candidate_fraction"] = discarded_fraction
+        self.diagnostics["total_discarded_candidates"] = (int(self.diagnostics.get("total_discarded_candidates", 0,)) + num_discarded)
+        self.diagnostics["total_generated_candidates"] = (int(self.diagnostics.get("total_generated_candidates", 0,)) + num_candidates)
+
+        if self.iteration >= self.implosion_check_start_iter and self.successful_updates >= 100 and discarded_fraction > self.max_discarded_message_fraction:
+            self.imploded = True
+            self.implosion_iteration = self.iteration + 1
+
+            self.diagnostics["imploded"] = True
+            self.diagnostics["implosion_iteration"] = self.implosion_iteration
+            self.diagnostics["implosion_discarded_fraction"] = discarded_fraction
+            self.diagnostics["implosion_reason"] = ("too_many_discarded_candidates")
+            
             self.no_update = True
             self.iteration += 1
 
@@ -815,59 +727,85 @@ class PopDyn:
 
             return
 
-        valid_candidates = torch.index_select(
-            candidates,
-            dim=0,
-            index=valid_indices,
-        )
-        valid_mass = torch.index_select(
-            candidate_mass,
-            dim=0,
-            index=valid_indices,
-        )
+        valid_indices = torch.nonzero(valid, as_tuple=False,).flatten()
 
-        log_weights = self.mparisi * torch.log(
-            valid_mass.clamp_min(self.torch_eps)
-        )
+        if valid_indices.numel() < self.min_valid_candidates_for_update:
+            self.consecutive_no_valid_updates += 1
+
+            self.diagnostics["last_no_valid_update"] = True
+            self.diagnostics["insufficient_valid_candidates"] = True
+            self.diagnostics["consecutive_insufficient_valid_updates"] = self.consecutive_no_valid_updates
+
+            self.no_update = True
+            self.iteration += 1
+
+            if self.iteration >= self.implosion_check_start_iter and self.consecutive_no_valid_updates >= 5:
+                self.imploded = True
+                self.implosion_iteration = self.iteration
+
+                self.diagnostics["imploded"] = True
+                self.diagnostics["implosion_iteration"] = self.implosion_iteration
+                self.diagnostics["implosion_reason"] = "persistent_no_valid_candidates"
+                self.diagnostics["implosion_discarded_fraction"] = discarded_fraction
+
+
+            if should_record:
+                self._record_and_save_diagnostics(candidate_mass)
+
+            return
+
+        self.consecutive_no_valid_updates = 0
+        self.diagnostics["last_no_valid_update"] = False
+        self.diagnostics["consecutive_no_valid_updates"] = 0
+
+        valid_candidates = torch.index_select(candidates, dim=0, index=valid_indices,)
+        valid_mass = torch.index_select(candidate_mass, dim=0, index=valid_indices,)
+
+        log_weights = self.mparisi * torch.log(valid_mass.clamp_min(self.torch_eps))
         log_weights -= log_weights.max()
 
         weights = torch.exp(log_weights)
-        weights = torch.where(
-            torch.isfinite(weights),
-            weights,
-            torch.zeros_like(weights),
-        )
 
-        if float(weights.sum().item()) <= self.torch_eps:
+        if not bool(torch.isfinite(weights).all().item()) or float(weights.sum().item()) <= self.torch_eps:
+            self.imploded = True
+            self.implosion_iteration = self.iteration + 1
+
+            self.diagnostics["imploded"] = True
+            self.diagnostics["implosion_iteration"] = (self.implosion_iteration)
+            self.diagnostics["implosion_reason"] = ("invalid_resampling_weights")
+
             self.no_update = True
             self.iteration += 1
-
-            if should_record:
-                self._record_and_save_diagnostics(candidate_mass)
-
             return
 
-        selected = torch.multinomial(
-            weights,
-            num_samples=self.num_updated,
-            replacement=True,
-            generator=self.torch_generator,
-        )
-        selected_candidates = torch.index_select(
-            valid_candidates,
-            dim=0,
-            index=selected,
+        selected = torch.multinomial(weights, num_samples=self.num_updated, replacement=True, generator=self.torch_generator,)
+        selected_candidates = torch.index_select(valid_candidates, dim=0, index=selected,)
+        selected_mass = torch.index_select(valid_mass, dim=0, index=selected,)
+
+        new_messages = selected_candidates / selected_mass[:, None, None]
+
+        # checks
+        new_message_mass = new_messages.sum(dim=(1, 2))
+        max_normalization_error = torch.abs(
+            new_message_mass - 1.0
+        ).max()
+
+        self.diagnostics["last_new_message_normalization_error"] = float(
+            max_normalization_error.item()
         )
 
-        new_messages, bad_new_messages = self._normalize_messages_torch(
-            selected_candidates
-        )
-        num_fallbacks = int(bad_new_messages.sum().item())
-        self.diagnostics["last_uniform_fallbacks"] = num_fallbacks
-        self.diagnostics["total_uniform_fallbacks"] = (
-            int(self.diagnostics.get("total_uniform_fallbacks", 0))
-            + num_fallbacks
-        )
+        if float(max_normalization_error.item()) > 1e-12:
+            self.imploded = True
+            self.implosion_iteration = self.iteration + 1
+            self.diagnostics["imploded"] = True
+            self.diagnostics["implosion_iteration"] = self.implosion_iteration
+            self.diagnostics["implosion_reason"] = (
+                "normalized_message_mass_error"
+            )
+            self.no_update = True
+            self.iteration += 1
+            return
+        # checks
 
         if self.impose_color_symmetry:
             new_messages = self._randomly_permute_colors_torch(new_messages)
@@ -878,37 +816,35 @@ class PopDyn:
                 "Population-size mismatch: "
                 f"shape[0]={population_size}, M={self.M}."
             )
-        if new_messages.shape != (
-            self.num_updated,
-            self.K,
-            self.K,
-        ):
+        if new_messages.shape != (self.num_updated, self.K, self.K,):
             raise RuntimeError(
                 "Invalid replacement batch shape: "
                 f"got {tuple(new_messages.shape)}, expected "
                 f"{(self.num_updated, self.K, self.K)}."
             )
         if not bool(torch.isfinite(new_messages).all().item()):
-            raise RuntimeError("Non-finite values remain in new messages.")
+            self.imploded = True
+            self.implosion_iteration = self.iteration + 1
 
-        replace_indices = torch.randperm(
-            population_size,
-            device=self.device,
-            generator=self.torch_generator,
-            dtype=torch.long,
-        )[:self.num_updated]
+            self.diagnostics["imploded"] = True
+            self.diagnostics["implosion_iteration"] = (self.implosion_iteration)
+            self.diagnostics["implosion_reason"] = ("nonfinite_normalized_messages")
 
-        self.population.index_copy_(
-            dim=0,
-            index=replace_indices,
-            source=new_messages,
-        )
+            self.no_update = True
+            self.iteration += 1
+            return
 
+        replace_indices = torch.randperm(population_size, device=self.device, generator=self.torch_generator, dtype=torch.long,)[:self.num_updated]
+
+        self.population.index_copy_(dim=0, index=replace_indices, source=new_messages,)
+        
         self.no_update = False
         self.iteration += 1
+        self.successful_updates += 1
 
         if should_record:
             self._record_and_save_diagnostics(candidate_mass)
+
 
     def run(
         self,
@@ -938,6 +874,33 @@ class PopDyn:
             will_check_diff = (check_convergence and self.track_diff and (self.iteration + 1) % self.convergence_check_every == 0)
             self.step(snapshot_old=will_check_diff)
 
+            if self.imploded:
+                if verbose >= 1:
+                    print(
+                        f"Population dynamics imploded at iter={self.iteration}. "
+                        f"Reason: {self.diagnostics.get('implosion_reason', 'unknown')}. "
+                        f"Discarded fraction: "
+                        f"{self.diagnostics.get('implosion_discarded_fraction', float('nan')):.6g}"
+                    )
+                break
+
+            if self.no_update:
+                stable = False
+                stable_checks = 0
+
+                if verbose >= 2 and self.iteration % self.convergence_check_every == 0:
+                    print(
+                        f"iter={self.iteration} "
+                        "no valid population update; "
+                        f"consecutive_no_valid="
+                        f"{self.consecutive_no_valid_updates}"
+                    )
+
+                if self.use_wandb and self.iteration % self.log_every == 0:
+                    self._log_wandb()
+
+                continue
+
             if (check_convergence and self.track_diff and self.iteration % self.convergence_check_every == 0):
                 self.last_diff = self.diff(n_bins=self.diff_n_bins)
 
@@ -965,10 +928,11 @@ class PopDyn:
                     stable = False
                     stable_checks = 0
 
-                if stable_checks >= stable_checks_required:
+                if stable_checks >= stable_checks_required and not stable:
                     stable = True
                     self.diagnostics["stabilized_iteration"] = self.iteration
 
+                if stable and not sample_observables:
                     if not sample_observables:
                         if verbose >= 1:
                             print(
@@ -978,16 +942,8 @@ class PopDyn:
                             )
                         break
 
-            can_sample = (
-                sample_observables
-                and self.iteration >= self.sampling_start_iter
-                and self.iteration % self.sampling_interval == 0
-                and (
-                    stable
-                    or not self.require_convergence_for_sampling
-                    or not check_convergence
-                )
-            )
+            can_sample = (sample_observables and self.iteration >= self.sampling_start_iter and self.iteration % self.sampling_interval == 0 and (
+                    stable or not self.require_convergence_for_sampling or not check_convergence))
 
             if can_sample:
                 self.update_observables(num_samples=num_samples)
@@ -1009,7 +965,7 @@ class PopDyn:
             if self.use_wandb and self.iteration % self.log_every == 0:
                 self._log_wandb()
 
-        if sample_observables and len(self.psi_samples) > 0:
+        if sample_observables and not self.imploded and len(self.psi_samples) > 0:
             self._finalize_observable_samples()
 
         if self.device.type == "cuda":
@@ -1038,239 +994,6 @@ class PopDyn:
                 self.wandb_run = None
 
 
-    def _reset_observable_samples(self) -> None:
-        self.psi_samples = []
-        self.phi_samples = []
-        self.complexity_samples = []
-        self.rho_samples = []
-        self.s_samples = []
-        self.observable_iterations = []
-
-        self.psi_mean = None
-        self.phi_mean = None
-        self.complexity_mean = None
-        self.rho_mean = None
-        self.s_mean = None
-
-        self.psi_std = None
-        self.phi_std = None
-        self.complexity_std = None
-        self.rho_std = None
-        self.s_std = None
-
-
-    def _record_current_observables(self) -> None:
-        if self.psi is not None:
-            self.psi_samples.append(float(self.psi))
-            self.observable_iterations.append(int(self.iteration))
-        if self.phi is not None:
-            self.phi_samples.append(float(self.phi))
-        if self.complexity is not None:
-            self.complexity_samples.append(float(self.complexity))
-        if self.rho is not None:
-            self.rho_samples.append(np.asarray(self.rho, dtype=self.dtype).copy())
-        if self.s is not None:
-            self.s_samples.append(float(self.s))
-
-
-    def _finalize_observable_samples(self) -> None:
-        if len(self.psi_samples) > 0:
-            self.psi_mean = float(np.mean(self.psi_samples))
-            self.psi_std = float(np.std(self.psi_samples))
-
-        if len(self.phi_samples) > 0:
-            self.phi_mean = float(np.mean(self.phi_samples))
-            self.phi_std = float(np.std(self.phi_samples))
-
-        if len(self.complexity_samples) > 0:
-            self.complexity_mean = float(np.mean(self.complexity_samples))
-            self.complexity_std = float(np.std(self.complexity_samples))
-
-        if len(self.rho_samples) > 0:
-            rho_arr = np.asarray(self.rho_samples, dtype=self.dtype)
-            self.rho_mean = np.mean(rho_arr, axis=0)
-            self.rho_std = np.std(rho_arr, axis=0)
-
-        if len(self.s_samples) > 0:
-            self.s_mean = float(np.mean(self.s_samples))
-            self.s_std = float(np.std(self.s_samples))
-
-
-    def _log_wandb(self, final: bool = False) -> None:
-        if not self.use_wandb:
-            return
-
-        data: Dict[str, Any] = {
-            "iteration": self.iteration,
-            "final": final,
-        }
-
-        if self.last_diff is not None:
-            data["diff"] = self.last_diff
-
-        if self.psi is not None:
-            data["psi"] = self.psi
-        if self.phi is not None:
-            data["phi"] = self.phi
-        if self.complexity is not None:
-            data["complexity"] = self.complexity
-        if self.s is not None:
-            data["s"] = self.s
-
-        if self.rho is not None:
-            for a, value in enumerate(self.rho):
-                data[f"rho/{a}"] = float(value)
-
-        if self.psi_mean is not None:
-            data["psi_mean"] = self.psi_mean
-            data["psi_std"] = self.psi_std
-        if self.phi_mean is not None:
-            data["phi_mean"] = self.phi_mean
-            data["phi_std"] = self.phi_std
-        if self.complexity_mean is not None:
-            data["complexity_mean"] = self.complexity_mean
-            data["complexity_std"] = self.complexity_std
-        if self.s_mean is not None:
-            data["s_mean"] = self.s_mean
-            data["s_std"] = self.s_std
-
-        if self.rho_mean is not None:
-            for a, value in enumerate(self.rho_mean):
-                data[f"rho_mean/{a}"] = float(value)
-            for a, value in enumerate(self.rho_std):
-                data[f"rho_std/{a}"] = float(value)
-
-        if "last_observable_node_samples" in self.diagnostics:
-            data["observables/node_sample_count"] = (self.diagnostics["last_observable_node_samples"])
-
-        if "last_observable_edge_samples" in self.diagnostics:
-            data["observables/edge_sample_count"] = (self.diagnostics["last_observable_edge_samples"])
-
-        if "observable_batch_size" in self.diagnostics:
-            data["observables/batch_size"] = (self.diagnostics["observable_batch_size"])
-
-        data["observables/valid"] = int(self.last_observables_valid)
-        data["observables/node_valid_fraction"] = self.diagnostics.get("node_valid_fraction")
-        data["observables/edge_valid_fraction"] = self.diagnostics.get("edge_valid_fraction")
-
-        if self.wandb_run is None:
-            raise RuntimeError("wandb logging was requested, but no active wandb run exists.")
-        self.wandb_run.log(data, step=self.iteration)
-
-    def _save_and_log_final_plots(self) -> None:
-        plot_dir = os.path.join(self.save_dir, self.run_name, "plots")
-        if self.save_final_plots and self.save_locally:
-            os.makedirs(plot_dir, exist_ok=True)
-
-        figures: Dict[str, Any] = {}
-
-        figures["population_histograms"] = self.plot_population_histograms(
-            n_bins=self.final_plot_bins,
-            save_path=(
-                os.path.join(plot_dir, "population_histograms.png")
-                if self.save_final_plots and self.save_locally else None
-            ),
-            show=False,
-        )
-        figures["population_atoms"] = self.plot_population_atoms(
-            decimals=12,
-            max_atoms=200,
-            sample_size=100_000,
-            save_path=(
-                os.path.join(
-                    plot_dir,
-                    "population_atoms.png",
-                )
-                if self.save_final_plots and self.save_locally
-                else None
-            ),
-            show=False,
-        )
-        figures["mean_message"] = self.plot_mean_message(
-            save_path=(
-                os.path.join(plot_dir, "mean_message.png")
-                if self.save_final_plots and self.save_locally else None
-            ),
-            show=False,
-        )
-
-        if len(self.population_diagnostic_history) > 0:
-            figures["mean_message_evolution"] = self.plot_mean_message_evolution(
-                save_path=(
-                    os.path.join(plot_dir, "mean_message_evolution.png")
-                    if self.save_final_plots and self.save_locally else None
-                ),
-                show=False,
-            )
-
-        if len(self.psi_samples) > 0:
-            figures["observable_samples"] = self.plot_observable_samples(
-                save_path=(
-                    os.path.join(plot_dir, "observable_samples.png")
-                    if self.save_final_plots and self.save_locally else None
-                ),
-                show=False,
-            )
-
-        if self.use_wandb and self.wandb_log_plots:
-            if self.wandb_run is None:
-                raise RuntimeError("Cannot log plots because there is no active wandb run.")
-            if self.use_wandb and self.wandb_log_plots:
-                if self.wandb_run is None:
-                    raise RuntimeError(
-                        "Cannot log plots because there is no active W&B run."
-                    )
-
-                for name, fig in figures.items():
-                    self.wandb_run.log(
-                        {
-                            f"plots/{name}": wandb.Image(fig),
-                        },
-                        step=self.iteration,
-                    )
-
-        for fig in figures.values():
-            plt.close(fig)
-
-    def reset_population(
-        self,
-        reset_iteration: bool = True,
-        reset_observables: bool = True,
-    ) -> None:
-        initial_population = self._initialize_population()
-        self.population = torch.as_tensor(initial_population, dtype=self.torch_dtype, device=self.device)
-        self.old_population = self.population.clone()
-
-        self._diag_idx = torch.arange(self.K, device=self.device)
-        self._r_parent = torch.arange(self.num_parents + 1, device=self.device)
-        self._r_node = torch.arange(self.d + 1, device=self.device)
-        self._mask_diag = self._constraint_mask_tensor(self._r_parent + 1)
-        self._mask_offdiag = self._constraint_mask_tensor(self._r_parent)
-        self._mask_node = self._constraint_mask_tensor(self._r_node)
-        self._field_message = torch.exp(-(
-            torch.as_tensor(self.mu, dtype=self.torch_dtype, device=self.device)[:, None]
-            + torch.as_tensor(self.mu, dtype=self.torch_dtype, device=self.device)[None, :]
-        ) / self.d)
-        self._field_node = torch.exp(-torch.as_tensor(self.mu, dtype=self.torch_dtype, device=self.device))
-        self._has_message_field = bool(np.any(self.mu != 0.0))
-        self._has_node_field = self._has_message_field
-        self.no_update = False
-        self.last_diff = None
-        self.population_diagnostic_history = []
-
-        if reset_iteration:
-            self.iteration = 0
-
-        if reset_observables:
-            self.psi = None
-            self.phi = None
-            self.complexity = None
-            self.rho = None
-            self.s = None
-
-            self._reset_observable_samples()
-
-
     @torch.inference_mode()
     def diff(self, n_bins: Optional[int] = None) -> float:
         if n_bins is None:
@@ -1284,7 +1007,9 @@ class PopDyn:
             total += torch.abs(new_hist - old_hist).sum()
         return float((total / self.M).item())
 
-
+    #=============================================================================================================================
+    # OBSERVABLES COMPUTATION AND DIAGNOSTICS
+    #=============================================================================================================================
 
     def _node_partition_terms(self, node_messages: torch.Tensor):
         coeff = self._same_count_coefficients_torch(node_messages)
@@ -1292,6 +1017,7 @@ class PopDyn:
         if self._has_node_field:
             color_weights.mul_(self._field_node)
         return color_weights, color_weights.sum(dim=1)
+
 
     def _observable_sample_counts(
         self,
@@ -1463,13 +1189,506 @@ class PopDyn:
         self.diagnostics["observable_batch_size"] = batch_size
 
 
+    @torch.inference_mode()
+    def population_health(self) -> Dict[str, Any]:
+        pop = self.population
+
+        finite_mask = torch.isfinite(pop)
+        message_mass = pop.sum(dim=(1, 2))
+
+        finite_messages = finite_mask.all(dim=(1, 2))
+        zero_messages = message_mass <= self.torch_eps
+
+        mean_message = pop.mean(dim=0)
+
+        stats = {
+            "iteration": int(self.iteration),
+            "population_min": float(torch.nan_to_num(pop).min().item()),
+            "population_max": float(torch.nan_to_num(pop).max().item()),
+            "mean_message": mean_message.detach().cpu().numpy(),
+            "mean_message_sum": float(mean_message.sum().item()),
+            "mass_min": float(torch.nan_to_num(message_mass).min().item()),
+            "mass_max": float(torch.nan_to_num(message_mass).max().item()),
+            "mass_mean": float(torch.nan_to_num(message_mass).mean().item()),
+            "mass_std": float(torch.nan_to_num(message_mass).std().item()),
+            "max_normalization_error": float(torch.nan_to_num(torch.abs(message_mass - 1.0)).max().item()),
+            "nonfinite_message_fraction": float((~finite_messages).to(self.torch_dtype).mean().item()),
+            "zero_message_fraction": float(zero_messages.to(self.torch_dtype).mean().item()),
+            "zero_component_fraction": float((pop <= self.torch_eps).to(self.torch_dtype).mean().item()),
+        }
+
+        return stats
+    
+        
+    def reset_population(
+            self,
+            reset_iteration: bool = True,
+            reset_observables: bool = True,
+        ) -> None:
+            initial_population = self._initialize_population()
+            self.population = torch.as_tensor(initial_population, dtype=self.torch_dtype, device=self.device)
+            self.old_population = self.population.clone()
+
+            self._diag_idx = torch.arange(self.K, device=self.device)
+            self._r_parent = torch.arange(self.num_parents + 1, device=self.device)
+            self._r_node = torch.arange(self.d + 1, device=self.device)
+            self._mask_diag = self._constraint_mask_tensor(self._r_parent + 1)
+            self._mask_offdiag = self._constraint_mask_tensor(self._r_parent)
+            self._mask_node = self._constraint_mask_tensor(self._r_node)
+            self._field_message = torch.exp(-(
+                torch.as_tensor(self.mu, dtype=self.torch_dtype, device=self.device)[:, None]
+                + torch.as_tensor(self.mu, dtype=self.torch_dtype, device=self.device)[None, :]
+            ) / self.d)
+            self._field_node = torch.exp(-torch.as_tensor(self.mu, dtype=self.torch_dtype, device=self.device))
+            self._has_message_field = bool(np.any(self.mu != 0.0))
+            self._has_node_field = self._has_message_field
+            self.no_update = False
+            self.last_diff = None
+            self.imploded = False
+            self.implosion_iteration = None
+            self.population_diagnostic_history = []
+            self.successful_updates = 0
+            self.consecutive_no_valid_updates = 0
+
+            for key in ("imploded",
+                "implosion_iteration",
+                "implosion_reason",
+                "implosion_discarded_fraction",
+                "total_discarded_candidates",
+                "total_generated_candidates",
+                "last_candidate_count",
+                "last_valid_candidate_count",
+                "last_discarded_candidate_count",
+                "last_discarded_candidate_fraction",
+            ):
+                self.diagnostics.pop(key, None)
+
+            if reset_iteration:
+                self.iteration = 0
+
+            if reset_observables:
+                self.psi = None
+                self.phi = None
+                self.complexity = None
+                self.rho = None
+                self.s = None
+
+                self._reset_observable_samples()
+
+
+    def _reset_observable_samples(self) -> None:
+        self.psi_samples = []
+        self.phi_samples = []
+        self.complexity_samples = []
+        self.rho_samples = []
+        self.s_samples = []
+        self.observable_iterations = []
+
+        self.psi_mean = None
+        self.phi_mean = None
+        self.complexity_mean = None
+        self.rho_mean = None
+        self.s_mean = None
+
+        self.psi_std = None
+        self.phi_std = None
+        self.complexity_std = None
+        self.rho_std = None
+        self.s_std = None
+
+        self.psi = None
+        self.phi = None
+        self.complexity = None
+        self.rho = None
+        self.s = None
+
+        self.last_observables_valid = False
+
+    # -----------------------------------------------------------
+    # LOGGING
+    # -----------------------------------------------------------
+
+    def _record_current_observables(self) -> None:
+        if self.psi is not None:
+            self.psi_samples.append(float(self.psi))
+            self.observable_iterations.append(int(self.iteration))
+        if self.phi is not None:
+            self.phi_samples.append(float(self.phi))
+        if self.complexity is not None:
+            self.complexity_samples.append(float(self.complexity))
+        if self.rho is not None:
+            self.rho_samples.append(np.asarray(self.rho, dtype=self.dtype).copy())
+        if self.s is not None:
+            self.s_samples.append(float(self.s))
+
+
+    def _finalize_observable_samples(self) -> None:
+        if len(self.psi_samples) > 0:
+            self.psi_mean = float(np.mean(self.psi_samples))
+            self.psi_std = float(np.std(self.psi_samples))
+
+        if len(self.phi_samples) > 0:
+            self.phi_mean = float(np.mean(self.phi_samples))
+            self.phi_std = float(np.std(self.phi_samples))
+
+        if len(self.complexity_samples) > 0:
+            self.complexity_mean = float(np.mean(self.complexity_samples))
+            self.complexity_std = float(np.std(self.complexity_samples))
+
+        if len(self.rho_samples) > 0:
+            rho_arr = np.asarray(self.rho_samples, dtype=self.dtype)
+            self.rho_mean = np.mean(rho_arr, axis=0)
+            self.rho_std = np.std(rho_arr, axis=0)
+
+        if len(self.s_samples) > 0:
+            self.s_mean = float(np.mean(self.s_samples))
+            self.s_std = float(np.std(self.s_samples))
+
+
+    def _init_wandb(self) -> None:
+        config = {
+            "K": self.K,
+            "d": self.d,
+            "H": self.H,
+            "problem_type": self.problem_type,
+            "target_density": self.target_density.tolist(),
+            "mparisi": self.mparisi,
+            "mu": self.mu.tolist(),
+            "M": self.M,
+            "damping": self.damping,
+            "num_updated": self.num_updated,
+            "max_iter": self.max_iter,
+            "tol": self.tol,
+            "convergence_check_every": self.convergence_check_every,
+            "num_samples": self.num_samples,
+            "observable_upsampling_factor": self.observable_upsampling_factor,
+            "observable_batch_size": self.observable_batch_size,
+            "min_observable_samples": self.min_observable_samples,
+            "sampling_start_iter": self.sampling_start_iter,
+            "sampling_interval": self.sampling_interval,
+            "require_convergence_for_sampling": self.require_convergence_for_sampling,
+            "init_type": self.init_type,
+            "init_noise": self.init_noise,
+            "impose_color_symmetry": self.impose_color_symmetry,
+            "seed": self.seed,
+            "device": str(self.device),
+            "torch_dtype": str(self.torch_dtype),
+            "wandb_log_plots": self.wandb_log_plots,
+            "save_final_plots": self.save_final_plots,
+            "final_plot_bins": self.final_plot_bins,
+            "diagnostic_every": self.diagnostic_every,
+            "diagnostic_hist_bins": self.diagnostic_hist_bins,
+            "diagnostic_sample_size": self.diagnostic_sample_size,
+            "save_diagnostic_plots": self.save_diagnostic_plots,
+            "min_valid_fraction": self.min_valid_fraction,
+            "max_discarded_message_fraction": self.max_discarded_message_fraction,
+            "implosion_check_start_iter": self.implosion_check_start_iter,
+            **self.wandb_config_extra,
+        }
+
+        self.wandb_run = wandb.init(project=self.wandb_project, group=self.wandb_group, name=self.wandb_name or self.run_name, config=config, reinit="finish_previous",)
+
+        if self.wandb_run is None:
+            raise RuntimeError(
+                "wandb.init() did not create a run. Check WANDB_MODE, authentication, "
+                "and network access from the compute node."
+            )
+        
+
+    def _log_wandb(self, final: bool = False) -> None:
+        if not self.use_wandb:
+            return
+
+        data: Dict[str, Any] = {"iteration": self.iteration, "final": final,}
+
+        if self.last_diff is not None:
+            data["diff"] = self.last_diff
+
+        if self.psi is not None:
+            data["psi"] = self.psi
+        if self.phi is not None:
+            data["phi"] = self.phi
+        if self.complexity is not None:
+            data["complexity"] = self.complexity
+        if self.s is not None:
+            data["s"] = self.s
+
+        if self.rho is not None:
+            for a, value in enumerate(self.rho):
+                data[f"rho/{a}"] = float(value)
+
+        if self.psi_mean is not None:
+            data["psi_mean"] = self.psi_mean
+            data["psi_std"] = self.psi_std
+        if self.phi_mean is not None:
+            data["phi_mean"] = self.phi_mean
+            data["phi_std"] = self.phi_std
+        if self.complexity_mean is not None:
+            data["complexity_mean"] = self.complexity_mean
+            data["complexity_std"] = self.complexity_std
+        if self.s_mean is not None:
+            data["s_mean"] = self.s_mean
+            data["s_std"] = self.s_std
+
+        if self.rho_mean is not None:
+            for a, value in enumerate(self.rho_mean):
+                data[f"rho_mean/{a}"] = float(value)
+            for a, value in enumerate(self.rho_std):
+                data[f"rho_std/{a}"] = float(value)
+
+        if "last_observable_node_samples" in self.diagnostics:
+            data["observables/node_sample_count"] = (self.diagnostics["last_observable_node_samples"])
+
+        if "last_observable_edge_samples" in self.diagnostics:
+            data["observables/edge_sample_count"] = (self.diagnostics["last_observable_edge_samples"])
+
+        if "observable_batch_size" in self.diagnostics:
+            data["observables/batch_size"] = (self.diagnostics["observable_batch_size"])
+
+        data["observables/valid"] = int(self.last_observables_valid)
+        data["observables/node_valid_fraction"] = self.diagnostics.get("node_valid_fraction")
+        data["observables/edge_valid_fraction"] = self.diagnostics.get("edge_valid_fraction")
+
+        data["population/imploded"] = int(self.imploded)
+        data["population/discarded_candidate_fraction"] = self.diagnostics.get("last_discarded_candidate_fraction")
+        data["population/total_discarded_candidates"] = self.diagnostics.get("total_discarded_candidates")
+
+        data["population/valid_candidate_count"] = self.diagnostics.get("last_valid_candidate_count")
+        data["population/discarded_candidate_count"] = self.diagnostics.get("last_discarded_candidate_count")
+        data["population/consecutive_no_valid_updates"] = self.consecutive_no_valid_updates
+        data["population/successful_updates"] = self.successful_updates
+
+        if self.wandb_run is None:
+            raise RuntimeError("wandb logging was requested, but no active wandb run exists.")
+        self.wandb_run.log(data, step=self.iteration)
+
+
+    def _save_and_log_final_plots(self) -> None:
+        plot_dir = os.path.join(self.save_dir, self.run_name, "plots")
+        if self.save_final_plots and self.save_locally:
+            os.makedirs(plot_dir, exist_ok=True)
+
+        figures: Dict[str, Any] = {}
+
+        figures["population_histograms"] = self.plot_population_histograms(n_bins=self.final_plot_bins, save_path=(os.path.join(plot_dir, "population_histograms.png")
+                if self.save_final_plots and self.save_locally else None), show=False,)
+        figures["population_atoms"] = self.plot_population_atoms(decimals=12, max_atoms=200, sample_size=100_000, save_path=(os.path.join(plot_dir, "population_atoms.png",)
+                if self.save_final_plots and self.save_locally else None), show=False,)
+        figures["mean_message"] = self.plot_mean_message(save_path=(os.path.join(plot_dir, "mean_message.png")
+                if self.save_final_plots and self.save_locally else None), show=False,)
+
+        if len(self.population_diagnostic_history) > 0:
+            figures["mean_message_evolution"] = self.plot_mean_message_evolution(save_path=(os.path.join(plot_dir, "mean_message_evolution.png")
+                    if self.save_final_plots and self.save_locally else None), show=False,)
+            
+            figures["diagnostic_time_series"] = self.plot_diagnostic_time_series(save_path=(os.path.join(plot_dir, "diagnostic_time_series.png",)
+                    if self.save_final_plots and self.save_locally else None), show=False,)
+
+            figures["candidate_mass_evolution"] = self.plot_candidate_mass_evolution(save_path=(os.path.join(plot_dir, "candidate_mass_evolution.png",)
+                    if self.save_final_plots and self.save_locally else None), show=False,)
+
+        if len(self.psi_samples) > 0:
+            figures["observable_samples"] = self.plot_observable_samples(save_path=(os.path.join(plot_dir, "observable_samples.png")
+                    if self.save_final_plots and self.save_locally else None), show=False,)
+
+        if self.use_wandb and self.wandb_log_plots:
+            if self.wandb_run is None:
+                raise RuntimeError("Cannot log plots because there is no active wandb run.")
+            if self.use_wandb and self.wandb_log_plots:
+                if self.wandb_run is None:
+                    raise RuntimeError("Cannot log plots because there is no active W&B run.")
+
+                for name, fig in figures.items():
+                    self.wandb_run.log({f"plots/{name}": wandb.Image(fig),}, step=self.iteration,)
+
+        for fig in figures.values():
+            plt.close(fig)
+
+
+    @torch.inference_mode()
+    def _record_and_save_diagnostics(
+        self,
+        candidate_mass: Optional[torch.Tensor] = None,
+    ) -> None:
+        health = self.record_population_diagnostic(
+            candidate_Z=candidate_mass
+        )
+        snapshot = self.diagnostic_histogram_snapshot()
+        path = self.save_diagnostic_histogram(snapshot)
+
+        print(
+            f"[diagnostic iter={self.iteration}] "
+            f"mass_mean={health['mass_mean']:.8g}, "
+            f"mass_min={health['mass_min']:.8g}, "
+            f"max_norm_error={health['max_normalization_error']:.3e}, "
+            f"zero_messages={health['zero_message_fraction']:.3e}, "
+            f"zero_components={health['zero_component_fraction']:.3e}, "
+            f"valid_candidates="
+            f"{health.get('valid_candidate_fraction', float('nan')):.3e}, "
+            f"discarded_candidates="
+            f"{self.diagnostics.get('last_discarded_candidate_fraction', float('nan')):.3e}, "
+            f"saved={path}",
+            flush=True,
+        )
+
+
+    @torch.inference_mode()
+    def record_population_diagnostic(
+        self,
+        candidate_Z: Optional[torch.Tensor] = None,
+    ) -> Dict[str, Any]:
+        health = self.population_health()
+
+        health.update({
+            "discarded_candidate_fraction": float(self.diagnostics.get("last_discarded_candidate_fraction",np.nan,)),
+            "valid_candidate_count": int(self.diagnostics.get("last_valid_candidate_count",0,)),
+            "discarded_candidate_count": int(self.diagnostics.get("last_discarded_candidate_count",0,)),
+            "consecutive_no_valid_updates": int(self.consecutive_no_valid_updates),
+            "successful_updates": int(self.successful_updates),
+        })
+
+        if candidate_Z is not None:
+            finite_Z = torch.isfinite(candidate_Z)
+            positive_Z_mask = finite_Z & (candidate_Z > self.torch_eps)
+            zero_Z_mask = finite_Z & (candidate_Z <= self.torch_eps)
+            nonfinite_Z_mask = ~finite_Z
+
+            num_total = int(candidate_Z.numel())
+            num_positive = int(positive_Z_mask.sum().item())
+            num_zero = int(zero_Z_mask.sum().item())
+            num_nonfinite = int(nonfinite_Z_mask.sum().item())
+
+            positive_fraction = num_positive / num_total if num_total > 0 else 0.0
+            zero_fraction = num_zero / num_total if num_total > 0 else 0.0
+            nonfinite_fraction = num_nonfinite / num_total if num_total > 0 else 0.0
+
+            finite_values = candidate_Z[finite_Z]
+
+            if finite_values.numel() > 0:
+                candidate_Z_min = float(finite_values.min().item())
+                candidate_Z_max = float(finite_values.max().item())
+                candidate_Z_mean = float(finite_values.mean().item())
+            else:
+                candidate_Z_min = np.nan
+                candidate_Z_max = np.nan
+                candidate_Z_mean = np.nan
+
+            log10_min = math.log10(self.torch_eps)
+            log10_max = 2.0
+            log10_edges = np.linspace(log10_min, log10_max, self.diagnostic_hist_bins + 1,)
+
+            if num_positive > 0:
+                positive_Z = candidate_Z[positive_Z_mask]
+
+                if positive_Z.numel() > self.diagnostic_sample_size:
+                    sampled_indices = torch.randint(low=0, high=positive_Z.numel(), size=(self.diagnostic_sample_size,), device=self.device, generator=self.torch_generator,)
+                    positive_Z = torch.index_select(positive_Z, dim=0, index=sampled_indices,)
+
+                log10_Z = torch.log10(positive_Z).detach().cpu().numpy()
+
+                log10_counts, _ = np.histogram(log10_Z, bins=log10_edges,)
+
+                q00, q25, q50, q75, q100 = np.quantile(log10_Z, [0.0, 0.25, 0.5, 0.75, 1.0],)
+            else:
+                log10_counts = np.zeros(self.diagnostic_hist_bins, dtype=np.int64,)
+                q00 = q25 = q50 = q75 = q100 = np.nan
+
+            health.update({
+                "candidate_Z_min": candidate_Z_min,
+                "candidate_Z_max": candidate_Z_max,
+                "candidate_Z_mean": candidate_Z_mean,
+                "valid_candidate_fraction": positive_fraction,
+                "zero_candidate_fraction": zero_fraction,
+                "nonfinite_candidate_fraction": nonfinite_fraction,
+                "candidate_log10_hist_counts": log10_counts,
+                "candidate_log10_hist_edges": log10_edges,
+                "candidate_log10_q00": float(q00),
+                "candidate_log10_q25": float(q25),
+                "candidate_log10_q50": float(q50),
+                "candidate_log10_q75": float(q75),
+                "candidate_log10_q100": float(q100),
+            })
+
+        self.population_diagnostic_history.append(health)
+
+        if self.use_wandb and self.wandb_run is not None:
+            data = {
+                "diagnostics/population_min": health["population_min"],
+                "diagnostics/population_max": health["population_max"],
+                "diagnostics/mean_message_sum": health["mean_message_sum"],
+                "diagnostics/mass_min": health["mass_min"],
+                "diagnostics/mass_max": health["mass_max"],
+                "diagnostics/mass_mean": health["mass_mean"],
+                "diagnostics/max_normalization_error": health["max_normalization_error"],
+                "diagnostics/nonfinite_message_fraction": health["nonfinite_message_fraction"],
+                "diagnostics/zero_message_fraction": health["zero_message_fraction"],
+                "diagnostics/zero_component_fraction": health["zero_component_fraction"],
+                "diagnostics/discarded_candidate_fraction": health["discarded_candidate_fraction"],
+                "diagnostics/valid_candidate_count": health["valid_candidate_count"],
+                "diagnostics/discarded_candidate_count": health["discarded_candidate_count"],
+                "diagnostics/consecutive_no_valid_updates": health["consecutive_no_valid_updates"],
+                "diagnostics/successful_updates": health["successful_updates"],
+            }
+
+            for key in (
+                "valid_candidate_fraction",
+                "zero_candidate_fraction",
+                "nonfinite_candidate_fraction",
+                "candidate_Z_min",
+                "candidate_Z_max",
+                "candidate_Z_mean",
+                "candidate_log10_q00",
+                "candidate_log10_q25",
+                "candidate_log10_q50",
+                "candidate_log10_q75",
+                "candidate_log10_q100",
+            ):
+                if key in health:
+                    data[f"diagnostics/{key}"] = health[key]
+
+            self.wandb_run.log(data, step=self.iteration,)
+
+        return health
+        
+
+    def save_diagnostic_histogram(
+        self,
+        snapshot: Dict[str, Any],
+    ) -> Optional[str]:
+        if not self.save_diagnostic_plots:
+            return None
+
+        diagnostic_dir = os.path.join(self.save_dir, self.run_name, "diagnostics",)
+        os.makedirs(diagnostic_dir, exist_ok=True)
+
+        iteration = snapshot["iteration"]
+
+        save_path = os.path.join(diagnostic_dir, f"population_hist_iter_{iteration:07d}.png",)
+
+        fig = self.plot_population_histogram_snapshot(
+            snapshot,
+            title=(
+                f"Population diagnostic at iteration {iteration}\n"
+                f"{self._default_title()}"
+            ),
+            save_path=save_path,
+            show=False,
+        )
+
+        if self.use_wandb and self.wandb_run is not None:
+            self.wandb_run.log({"diagnostics/population_histogram": wandb.Image(fig),}, step=iteration,)
+
+        plt.close(fig)
+        return save_path
+        
+    #=============================================================================================================================
+    # Plotting
+    #=============================================================================================================================
+
     def _population_numpy(self, old: bool = False) -> np.ndarray:
         pop = self.old_population if old else self.population
         return pop.detach().cpu().numpy()
 
-    #=============================================================================================================================
-    # Plotting
-    #=============================================================================================================================
 
     def _default_title(self) -> str:
         return (
@@ -1525,12 +1744,7 @@ class PopDyn:
             which = "old population" if old else "population"
             title = f"{which} histograms\n{self._default_title()}"
 
-        fig, axes = plt.subplots(
-            self.K,
-            self.K,
-            figsize=(2.8 * self.K, 2.4 * self.K),
-            squeeze=False,
-        )
+        fig, axes = plt.subplots(self.K, self.K, figsize=(2.8 * self.K, 2.4 * self.K), squeeze=False,)
 
         for x in range(self.K):
             for y in range(self.K):
@@ -1538,23 +1752,11 @@ class PopDyn:
 
                 bin_edges = np.linspace(0.0, 1.0, n_bins + 1)
 
-                ax.hist(
-                    pop[:, x, y],
-                    bins=bin_edges,
-                    density=density,
-                    rwidth=1.0,
-                )
+                ax.hist(pop[:, x, y], bins=bin_edges, density=density, rwidth=1.0,)
 
                 mean_value = np.mean(pop[:, x, y])
                 ax.axvline(mean_value, linestyle="--")
-                ax.text(
-                    0.98,
-                    0.92,
-                    f"mean={mean_value:.4g}",
-                    transform=ax.transAxes,
-                    ha="right",
-                    va="top",
-                )
+                ax.text(0.98, 0.92, f"mean={mean_value:.4g}", transform=ax.transAxes, ha="right", va="top",)
 
                 ax.set_xlim(0.0, 1.0)
                 ax.set_title(rf"$\chi_{{{x},{y}}}$")
@@ -1565,6 +1767,7 @@ class PopDyn:
         fig.tight_layout()
 
         return self._finalize_plot(fig, save_path=save_path, show=show)
+
 
     def plot_mean_message(
         self,
@@ -1592,13 +1795,7 @@ class PopDyn:
 
         for x in range(self.K):
             for y in range(self.K):
-                ax.text(
-                    y,
-                    x,
-                    f"{mean_chi[x, y]:.3g}",
-                    ha="center",
-                    va="center",
-                )
+                ax.text(y, x, f"{mean_chi[x, y]:.3g}", ha="center", va="center",)
 
         fig.tight_layout()
         return self._finalize_plot(fig, save_path=save_path, show=show)
@@ -1628,9 +1825,6 @@ class PopDyn:
 
         fig, axes = plt.subplots(5, 1, figsize=(8, 12), sharex=True)
 
-        # -----------------------------
-        # Helper to plot one observable
-        # -----------------------------
         def _plot_series(ax, values, ylabel, draw_zero_line=False):
             values = np.asarray(values, dtype=float)
 
@@ -1648,30 +1842,15 @@ class PopDyn:
                 ax.axhline(mean_val, linestyle="--")
 
                 if plot_sem_band:
-                    ax.fill_between(
-                        t,
-                        mean_val - sem_val,
-                        mean_val + sem_val,
-                        alpha=0.2,
-                    )
+                    ax.fill_between(t, mean_val - sem_val, mean_val + sem_val, alpha=0.2,)
 
-                ax.text(
-                    0.99,
-                    0.92,
-                    f"mean={mean_val:.4g}\nsem={sem_val:.3g}",
-                    transform=ax.transAxes,
-                    ha="right",
-                    va="top",
-                )
+                ax.text(0.99, 0.92, f"mean={mean_val:.4g}\nsem={sem_val:.3g}", transform=ax.transAxes, ha="right", va="top",)
 
         _plot_series(axes[0], self.psi_samples, r"$\Psi$")
         _plot_series(axes[1], self.phi_samples, r"$\phi$")
         _plot_series(axes[2], self.complexity_samples, r"$\Sigma$", draw_zero_line=True)
         _plot_series(axes[3], self.s_samples, r"$s$")
 
-        # -----------------------------
-        # rho components
-        # -----------------------------
         rho_arr = np.asarray(self.rho_samples, dtype=float)
 
         for a in range(self.K):
@@ -1686,12 +1865,7 @@ class PopDyn:
                 axes[4].axhline(mean_val, linestyle="--")
 
                 if plot_sem_band:
-                    axes[4].fill_between(
-                        t,
-                        mean_val - sem_val,
-                        mean_val + sem_val,
-                        alpha=0.15,
-                    )
+                    axes[4].fill_between(t, mean_val - sem_val, mean_val + sem_val, alpha=0.15,)
 
         axes[4].axhline(1.0 / self.K, linestyle="--")
         axes[4].set_ylabel(r"$\rho$")
@@ -1706,6 +1880,7 @@ class PopDyn:
 
         return self._finalize_plot(fig, save_path=save_path, show=show)
     
+
     def compute_complexity_curves(
         self,
         m_list: Optional[np.ndarray] = None,
@@ -1748,11 +1923,7 @@ class PopDyn:
             else:
                 self._reset_observable_samples()
 
-            self.run(
-                check_convergence=check_convergence,
-                verbose=verbose,
-                **run_kwargs,
-            )
+            self.run(check_convergence=check_convergence, verbose=verbose, **run_kwargs,)
 
             self.psi_list[i] = self.psi_mean
             self.psi_list_std[i] = self.psi_std
@@ -1769,6 +1940,7 @@ class PopDyn:
             self.s_list[i] = self.s_mean
             self.s_list_std[i] = self.s_std
 
+
     def plot_complexity_vs_phi(
         self,
         errorbars: bool = True,
@@ -1784,14 +1956,7 @@ class PopDyn:
         ax.axhline(0.0, linestyle="--")
 
         if errorbars and self.phi_list_std is not None and self.complexity_list_std is not None:
-            ax.errorbar(
-                self.phi_list,
-                self.complexity_list,
-                xerr=self.phi_list_std,
-                yerr=self.complexity_list_std,
-                fmt="o",
-                capsize=3,
-            )
+            ax.errorbar(self.phi_list, self.complexity_list, xerr=self.phi_list_std, yerr=self.complexity_list_std, fmt="o", capsize=3,)
         else:
             ax.plot(self.phi_list, self.complexity_list, marker="o")
 
@@ -1818,13 +1983,7 @@ class PopDyn:
         ax.axhline(0.0, linestyle="--")
 
         if errorbars and self.complexity_list_std is not None:
-            ax.errorbar(
-                self.m_list,
-                self.complexity_list,
-                yerr=self.complexity_list_std,
-                fmt="o",
-                capsize=3,
-            )
+            ax.errorbar(self.m_list, self.complexity_list, yerr=self.complexity_list_std, fmt="o", capsize=3,)
         else:
             ax.plot(self.m_list, self.complexity_list, marker="o")
 
@@ -1859,14 +2018,7 @@ class PopDyn:
         ax.axvline(1.0 / self.K, linestyle="--")
 
         if errorbars:
-            ax.errorbar(
-                rho_component,
-                self.complexity_list,
-                xerr=rho_component_std,
-                yerr=self.complexity_list_std,
-                fmt="o",
-                capsize=3,
-            )
+            ax.errorbar(rho_component, self.complexity_list, xerr=rho_component_std, yerr=self.complexity_list_std, fmt="o", capsize=3,)
         else:
             ax.plot(rho_component, self.complexity_list, marker="o")
 
@@ -1896,13 +2048,7 @@ class PopDyn:
         ax.axhline(0.0, linestyle="--")
 
         if errorbars:
-            ax.errorbar(
-                balance_error,
-                self.complexity_list,
-                yerr=self.complexity_list_std,
-                fmt="o",
-                capsize=3,
-            )
+            ax.errorbar(balance_error, self.complexity_list, yerr=self.complexity_list_std, fmt="o", capsize=3,)
         else:
             ax.plot(balance_error, self.complexity_list, marker="o")
 
@@ -1913,6 +2059,7 @@ class PopDyn:
 
         return self._finalize_plot(fig, save_path=save_path, show=show)
     
+
     def population_histogram_snapshot(
         self,
         n_bins: int = 80,
@@ -1926,12 +2073,7 @@ class PopDyn:
 
         for x in range(self.K):
             for y in range(self.K):
-                hist, bin_edges = np.histogram(
-                    pop[:, x, y],
-                    bins=n_bins,
-                    range=(0.0, 1.0),
-                    density=density,
-                )
+                hist, bin_edges = np.histogram(pop[:, x, y], bins=n_bins, range=(0.0, 1.0), density=density,)
                 counts[x, y] = hist
 
                 if edges is None:
@@ -1959,12 +2101,7 @@ class PopDyn:
 
         centers = 0.5 * (edges[:-1] + edges[1:])
 
-        fig, axes = plt.subplots(
-            self.K,
-            self.K,
-            figsize=(2.8 * self.K, 2.4 * self.K),
-            squeeze=False,
-        )
+        fig, axes = plt.subplots(self.K, self.K, figsize=(2.8 * self.K, 2.4 * self.K), squeeze=False,)
 
         ymax = np.max(counts)
         if ymax <= 0:
@@ -1973,12 +2110,7 @@ class PopDyn:
         for x in range(self.K):
             for y in range(self.K):
                 ax = axes[x, y]
-                ax.bar(
-                    centers,
-                    counts[x, y],
-                    width=edges[1] - edges[0],
-                    align="center",
-                )
+                ax.bar(centers, counts[x, y], width=edges[1] - edges[0], align="center",)
                 ax.set_xlim(0.0, 1.0)
                 ax.set_ylim(0.0, 1.05 * ymax)
                 ax.set_title(rf"$\chi_{{{x},{y}}}$")
@@ -1993,6 +2125,7 @@ class PopDyn:
 
         return self._finalize_plot(fig, save_path=save_path, show=show)
     
+
     def plot_population_atoms(
         self,
         decimals: int = 12,
@@ -2008,20 +2141,9 @@ class PopDyn:
         sample_size = min(int(sample_size), self.M)
 
         if sample_size < self.M:
-            indices = torch.randint(
-                low=0,
-                high=self.M,
-                size=(sample_size,),
-                device=self.device,
-                generator=self.torch_generator,
-                dtype=torch.long,
-            )
+            indices = torch.randint(low=0, high=self.M, size=(sample_size,), device=self.device, generator=self.torch_generator, dtype=torch.long,)
 
-            pop = torch.index_select(
-                pop_tensor,
-                dim=0,
-                index=indices,
-            ).detach().cpu().numpy()
+            pop = torch.index_select(pop_tensor, dim=0, index=indices,).detach().cpu().numpy()
         else:
             pop = pop_tensor.detach().cpu().numpy()
 
@@ -2032,12 +2154,7 @@ class PopDyn:
                 f"{self._default_title()}"
             )
 
-        fig, axes = plt.subplots(
-            self.K,
-            self.K,
-            figsize=(2.8 * self.K, 2.4 * self.K),
-            squeeze=False,
-        )
+        fig, axes = plt.subplots(self.K, self.K, figsize=(2.8 * self.K, 2.4 * self.K), squeeze=False,)
 
         for x in range(self.K):
             for y in range(self.K):
@@ -2046,18 +2163,12 @@ class PopDyn:
                 component = pop[:, x, y]
                 rounded = np.round(component, decimals=decimals)
 
-                unique, counts = np.unique(
-                    rounded,
-                    return_counts=True,
-                )
+                unique, counts = np.unique(rounded, return_counts=True,)
 
                 total_unique = len(unique)
 
                 if total_unique > max_atoms:
-                    most_frequent = np.argpartition(
-                        counts,
-                        -max_atoms,
-                    )[-max_atoms:]
+                    most_frequent = np.argpartition(counts, -max_atoms,)[-max_atoms:]
 
                     unique = unique[most_frequent]
                     counts = counts[most_frequent]
@@ -2069,26 +2180,16 @@ class PopDyn:
                 if len(unique) > 1:
                     sorted_unique = np.sort(unique)
                     separations = np.diff(sorted_unique)
-                    positive_separations = separations[
-                        separations > 0
-                    ]
+                    positive_separations = separations[separations > 0]
 
                     if len(positive_separations) > 0:
-                        width = min(
-                            0.015,
-                            0.8 * np.min(positive_separations),
-                        )
+                        width = min(0.015, 0.8 * np.min(positive_separations),)
                     else:
                         width = 0.015
                 else:
                     width = 0.015
 
-                ax.bar(
-                    unique,
-                    counts,
-                    width=width,
-                    align="center",
-                )
+                ax.bar(unique, counts, width=width, align="center",)
 
                 mean_value = float(np.mean(component))
                 ax.axvline(mean_value, linestyle="--")
@@ -2107,125 +2208,14 @@ class PopDyn:
                 if total_unique > max_atoms:
                     text += f"\nshowing top {max_atoms}"
 
-                ax.text(
-                    0.98,
-                    0.95,
-                    text,
-                    transform=ax.transAxes,
-                    ha="right",
-                    va="top",
-                    fontsize=8,
-                )
+                ax.text(0.98, 0.95, text, transform=ax.transAxes, ha="right", va="top", fontsize=8,)
 
         fig.suptitle(title)
         fig.tight_layout()
 
-        return self._finalize_plot(
-            fig,
-            save_path=save_path,
-            show=show,
-        )
+        return self._finalize_plot(fig, save_path=save_path, show=show,)
     
-    @torch.inference_mode()
-    def _record_and_save_diagnostics(
-        self,
-        candidate_mass: Optional[torch.Tensor] = None,
-    ) -> None:
-        """Record scalar diagnostics and save one sampled histogram snapshot."""
-        health = self.record_population_diagnostic(
-            candidate_Z=candidate_mass
-        )
-        snapshot = self.diagnostic_histogram_snapshot()
-        path = self.save_diagnostic_histogram(snapshot)
 
-        print(
-            f"[diagnostic iter={self.iteration}] "
-            f"mass_mean={health['mass_mean']:.8g}, "
-            f"mass_min={health['mass_min']:.8g}, "
-            f"max_norm_error={health['max_normalization_error']:.3e}, "
-            f"zero_messages={health['zero_message_fraction']:.3e}, "
-            f"zero_components={health['zero_component_fraction']:.3e}, "
-            f"valid_candidates="
-            f"{health.get('valid_candidate_fraction', float('nan')):.3e}, "
-            f"uniform_fallbacks="
-            f"{self.diagnostics.get('last_uniform_fallbacks', 0)}, "
-            f"saved={path}",
-            flush=True,
-        )
-
-    @torch.inference_mode()
-    def record_population_diagnostic(
-        self,
-        candidate_Z: Optional[torch.Tensor] = None,
-    ) -> Dict[str, Any]:
-        health = self.population_health()
-
-        if candidate_Z is not None:
-            finite_Z = torch.isfinite(candidate_Z)
-            valid_Z = finite_Z & (candidate_Z > self.torch_eps)
-
-            health.update({
-                "candidate_Z_min": float(
-                    torch.nan_to_num(candidate_Z).min().item()
-                ),
-                "candidate_Z_max": float(
-                    torch.nan_to_num(candidate_Z).max().item()
-                ),
-                "candidate_Z_mean": float(
-                    torch.nan_to_num(candidate_Z).mean().item()
-                ),
-                "valid_candidate_fraction": float(
-                    valid_Z.to(self.torch_dtype).mean().item()
-                ),
-                "zero_candidate_fraction": float(
-                    (candidate_Z <= self.torch_eps)
-                    .to(self.torch_dtype)
-                    .mean()
-                    .item()
-                ),
-                "nonfinite_candidate_fraction": float(
-                    (~finite_Z)
-                    .to(self.torch_dtype)
-                    .mean()
-                    .item()
-                ),
-            })
-
-        self.population_diagnostic_history.append(health)
-
-        if self.use_wandb and self.wandb_run is not None:
-            data = {
-                "diagnostics/population_min": health["population_min"],
-                "diagnostics/population_max": health["population_max"],
-                "diagnostics/mean_message_sum": health["mean_message_sum"],
-                "diagnostics/mass_min": health["mass_min"],
-                "diagnostics/mass_max": health["mass_max"],
-                "diagnostics/mass_mean": health["mass_mean"],
-                "diagnostics/max_normalization_error":
-                    health["max_normalization_error"],
-                "diagnostics/nonfinite_message_fraction":
-                    health["nonfinite_message_fraction"],
-                "diagnostics/zero_message_fraction":
-                    health["zero_message_fraction"],
-                "diagnostics/zero_component_fraction":
-                    health["zero_component_fraction"],
-            }
-
-            for key in (
-                "valid_candidate_fraction",
-                "zero_candidate_fraction",
-                "nonfinite_candidate_fraction",
-                "candidate_Z_min",
-                "candidate_Z_max",
-                "candidate_Z_mean",
-            ):
-                if key in health:
-                    data[f"diagnostics/{key}"] = health[key]
-
-            self.wandb_run.log(data, step=self.iteration)
-
-        return health
-        
     @torch.inference_mode()
     def diagnostic_histogram_snapshot(
         self,
@@ -2240,33 +2230,17 @@ class PopDyn:
 
         sample_size = min(int(sample_size), self.M)
 
-        indices = torch.randint(
-            low=0,
-            high=self.M,
-            size=(sample_size,),
-            device=self.device,
-            generator=self.torch_generator,
-        )
+        indices = torch.randint(low=0, high=self.M, size=(sample_size,), device=self.device, generator=self.torch_generator,)
 
-        sampled_population = torch.index_select(
-            self.population,
-            dim=0,
-            index=indices,
-        ).detach().cpu().numpy()
+        sampled_population = torch.index_select(self.population, dim=0, index=indices,).detach().cpu().numpy()
 
-        counts = np.zeros(
-            (self.K, self.K, n_bins),
-            dtype=np.int64,
-        )
+        counts = np.zeros((self.K, self.K, n_bins), dtype=np.int64,)
 
         edges = np.linspace(0.0, 1.0, n_bins + 1)
 
         for x in range(self.K):
             for y in range(self.K):
-                counts[x, y], _ = np.histogram(
-                    sampled_population[:, x, y],
-                    bins=edges,
-                )
+                counts[x, y], _ = np.histogram(sampled_population[:, x, y], bins=edges,)
 
         return {
             "iteration": int(self.iteration),
@@ -2278,48 +2252,100 @@ class PopDyn:
             "density": False,
         }
     
-    def save_diagnostic_histogram(
+
+    def plot_candidate_mass_evolution(
         self,
-        snapshot: Dict[str, Any],
-    ) -> Optional[str]:
-        if not self.save_diagnostic_plots:
-            return None
+        save_path: Optional[str] = None,
+        show: bool = True,
+    ):
+        history = [item for item in self.population_diagnostic_history if "candidate_log10_hist_counts" in item]
 
-        diagnostic_dir = os.path.join(
-            self.save_dir,
-            self.run_name,
-            "diagnostics",
+        if len(history) == 0:
+            raise ValueError("No candidate-mass diagnostics have been recorded.")
+
+        iterations = np.asarray([item["iteration"] for item in history])
+
+        counts = np.stack([np.asarray(item["candidate_log10_hist_counts"], dtype=float,) for item in history])
+
+        edges = np.asarray(history[0]["candidate_log10_hist_edges"], dtype=float,)
+        centers = 0.5 * (edges[:-1] + edges[1:])
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        if np.all(counts == 0):
+            ax.text(0.5, 0.5, "No positive candidate masses\n" 
+                    "were observed in any diagnostic snapshot.", transform=ax.transAxes, ha="center", va="center",)
+            ax.set_xlabel("iteration")
+            ax.set_ylabel(r"$\log_{10}(Z_{\mathrm{candidate}})$")
+        else:
+            mesh = ax.pcolormesh(iterations, centers, np.log1p(counts.T), shading="nearest",)
+
+            colorbar = fig.colorbar(mesh, ax=ax,)
+            colorbar.set_label(r"$\log(1+\mathrm{count})$")
+
+            ax.set_xlabel("iteration")
+            ax.set_ylabel(r"$\log_{10}(Z_{\mathrm{candidate}})$")
+
+        ax.set_title(
+            f"Candidate-mass evolution\n"
+            f"{self._default_title()}"
         )
-        os.makedirs(diagnostic_dir, exist_ok=True)
 
-        iteration = snapshot["iteration"]
+        fig.tight_layout()
 
-        save_path = os.path.join(
-            diagnostic_dir,
-            f"population_hist_iter_{iteration:07d}.png",
+        return self._finalize_plot(fig, save_path=save_path, show=show,)
+    
+    def plot_diagnostic_time_series(
+        self,
+        save_path: Optional[str] = None,
+        show: bool = True,
+    ):
+        if len(self.population_diagnostic_history) == 0:
+            raise ValueError("No population diagnostics have been recorded.")
+
+        history = self.population_diagnostic_history
+
+        iterations = np.asarray([item["iteration"] for item in history])
+        discarded_fraction = np.asarray([item.get("discarded_candidate_fraction", np.nan) for item in history])
+        valid_candidate_count = np.asarray([item.get("valid_candidate_count", np.nan) for item in history])
+        zero_candidate_fraction = np.asarray([item.get("zero_candidate_fraction", np.nan) for item in history])
+        nonfinite_candidate_fraction = np.asarray([item.get("nonfinite_candidate_fraction", np.nan) for item in history])
+        consecutive_no_valid = np.asarray([item.get("consecutive_no_valid_updates", np.nan) for item in history]) 
+        successful_updates = np.asarray([item.get("successful_updates", np.nan) for item in history])
+
+        fig, axes = plt.subplots(5, 1, figsize=(9, 13), sharex=True,)
+
+        axes[0].plot(iterations, discarded_fraction, marker="o",)
+        axes[0].axhline(self.max_discarded_message_fraction, linestyle="--", label="implosion threshold",)
+        axes[0].set_ylabel("discarded fraction")
+        axes[0].set_ylim(-0.02, 1.02)
+        axes[0].legend()
+
+        axes[1].plot(iterations, valid_candidate_count, marker="o",)
+        axes[1].set_ylabel("valid candidates")
+        axes[1].set_yscale("symlog", linthresh=1.0,)
+
+        axes[2].plot(iterations, zero_candidate_fraction, marker="o", label="zero mass",)
+        axes[2].plot(iterations, nonfinite_candidate_fraction, marker="o", label="nonfinite",)
+        axes[2].set_ylabel("candidate fraction")
+        axes[2].set_ylim(-0.02, 1.02)
+        axes[2].legend()
+
+        axes[3].plot(iterations, consecutive_no_valid, marker="o",)
+        axes[3].set_ylabel("consecutive\nno-valid updates")
+
+        axes[4].plot(iterations, successful_updates, marker="o", )
+        axes[4].set_ylabel("successful updates")
+        axes[4].set_xlabel("iteration")
+
+        fig.suptitle(
+            f"Population-dynamics diagnostics\n"
+            f"{self._default_title()}"
         )
+        fig.tight_layout()
 
-        fig = self.plot_population_histogram_snapshot(
-            snapshot,
-            title=(
-                f"Population diagnostic at iteration {iteration}\n"
-                f"{self._default_title()}"
-            ),
-            save_path=save_path,
-            show=False,
-        )
-
-        if self.use_wandb and self.wandb_run is not None:
-            self.wandb_run.log(
-                {
-                    "diagnostics/population_histogram":
-                        wandb.Image(fig),
-                },
-                step=iteration,
-            )
-
-        plt.close(fig)
-        return save_path
+        return self._finalize_plot(fig, save_path=save_path, show=show,)
+    
     
     def plot_mean_message_evolution(
         self,
@@ -2329,43 +2355,21 @@ class PopDyn:
         if len(self.population_diagnostic_history) == 0:
             raise ValueError("No population diagnostics have been recorded.")
 
-        iterations = np.asarray([
-            item["iteration"]
-            for item in self.population_diagnostic_history
-        ])
+        iterations = np.asarray([item["iteration"] for item in self.population_diagnostic_history])
 
-        mean_messages = np.stack([
-            item["mean_message"]
-            for item in self.population_diagnostic_history
-        ])
+        mean_messages = np.stack([item["mean_message"] for item in self.population_diagnostic_history])
 
         fig, ax = plt.subplots(figsize=(9, 5))
 
         for x in range(self.K):
             for y in range(self.K):
-                ax.plot(
-                    iterations,
-                    mean_messages[:, x, y],
-                    marker="o",
-                    label=rf"$\chi_{{{x},{y}}}$",
-                )
+                ax.plot(iterations, mean_messages[:, x, y], marker="o", label=rf"$\chi_{{{x},{y}}}$",)
 
         ax.set_xlabel("iteration")
         ax.set_ylabel("population mean")
-        ax.set_title(
-            f"Mean-message evolution\n{self._default_title()}"
-        )
-        ax.legend(
-            ncol=min(4, self.K),
-            fontsize=8,
-            bbox_to_anchor=(1.02, 1.0),
-            loc="upper left",
-        )
+        ax.set_title(f"Mean-message evolution\n{self._default_title()}")
+        ax.legend(ncol=min(4, self.K), fontsize=8, bbox_to_anchor=(1.02, 1.0), loc="upper left",)
 
         fig.tight_layout()
 
-        return self._finalize_plot(
-            fig,
-            save_path=save_path,
-            show=show,
-        )
+        return self._finalize_plot(fig, save_path=save_path, show=show,)

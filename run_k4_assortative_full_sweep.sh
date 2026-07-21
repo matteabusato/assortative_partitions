@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --time=12:00:00
-#SBATCH --array=0-2
+#SBATCH --array=34-73
 #SBATCH --output=job_output/k4_ass_full_%A_%a.out
 #SBATCH --error=job_output/k4_ass_full_%A_%a.err
 #SBATCH --mail-type=END,FAIL
@@ -52,6 +52,8 @@ export PD_MIN_OBS_SAMPLES="${PD_MIN_OBS_SAMPLES:-20}"
 export PD_SAMPLING_START="${PD_SAMPLING_START:-5000}"
 export PD_SAMPLING_INTERVAL="${PD_SAMPLING_INTERVAL:-500}"
 export PD_REQUIRE_CONVERGENCE_FOR_SAMPLING="${PD_REQUIRE_CONVERGENCE_FOR_SAMPLING:-true}"
+export PD_IMPLOSION_CHECK_START="${PD_IMPLOSION_CHECK_START:-500}"
+export PD_MAX_DISCARDED_MESSAGE_FRACTION="${PD_MAX_DISCARDED_MESSAGE_FRACTION:-1.0}"
 
 # Leave PD_NUM_SAMPLES unset to use PD_OBS_FACTOR * M.
 # Define it explicitly only to override the upsampling rule.
@@ -59,6 +61,7 @@ export PD_REQUIRE_CONVERGENCE_FOR_SAMPLING="${PD_REQUIRE_CONVERGENCE_FOR_SAMPLIN
 # Optional intermediate diagnostics. Disabled by default for the full sweep.
 export PD_SAVE_DIAGNOSTIC_PLOTS="${PD_SAVE_DIAGNOSTIC_PLOTS:-false}"
 export PD_DIAGNOSTIC_HIST_BINS="${PD_DIAGNOSTIC_HIST_BINS:-80}"
+export PD_DIAGNOSTIC_EVERY="${PD_DIAGNOSTIC_EVERY:-500}"
 export PD_DIAGNOSTIC_SAMPLE_SIZE="${PD_DIAGNOSTIC_SAMPLE_SIZE:-100000}"
 
 export PD_USE_WANDB="${PD_USE_WANDB:-true}"
